@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Suite // Scout · Canopy · Waypoint</title>
+  <meta name="description" content="A suite of browser-based tools for website discovery, auditing, and migration." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #0a0a0d;
+      --bg-card:     #111114;
+      --bg-card-hd:  #0d0d10;
+      --border:      #1e1e26;
+      --border-soft: #1a1a22;
+      --text:        #e0ddd8;
+      --text-strong: #f0ece4;
+      --text-muted:  #555;
+      --text-dim:    #383840;
+      --text-body:   #c0bbb4;
+      --teal:        #008080;
+      --teal-bright: #00a0a0;
+      --teal-dim:    rgba(0,128,128,0.12);
+      --teal-glow:   rgba(0,128,128,0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      font-family: 'IBM Plex Sans', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Teal radial glow behind hero ── */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 600px;
+      background: radial-gradient(ellipse at center, rgba(0,128,128,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout ── */
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.75rem 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+
+    .suite-logo-svg { width: 28px; height: 28px; flex-shrink: 0; }
+
+    .nav-logo {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-strong);
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-logo .logo-dot {
+      width: 8px; height: 8px;
+      background: var(--teal);
+      border-radius: 50%;
+      animation: pulse-dot 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,128,128,0.4); }
+      50%       { opacity: 0.7; box-shadow: 0 0 0 6px rgba(0,128,128,0); }
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .nav-links a {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+      letter-spacing: 0.04em;
+    }
+    .nav-links a:hover { color: var(--teal); }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 7rem 0 5rem;
+      text-align: center;
+    }
+
+    .hero-kicker {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 1.75rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.1s forwards;
+    }
+
+    .hero-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      font-weight: 600;
+      color: var(--text-strong);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.2s forwards;
+    }
+
+    .hero-title .teal { color: var(--teal); }
+
+    .hero-sub {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+      color: var(--text-body);
+      max-width: 560px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.75;
+      font-weight: 300;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.3s forwards;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.4s forwards;
+    }
+
+    .btn-primary {
+      background: var(--teal);
+      color: #e0ddd8;
+      border: none;
+      border-radius: 4px;
+      padding: 0.75rem 1.75rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.02em;
+    }
+    .btn-primary:hover {
+      background: var(--teal-bright);
+      box-shadow: 0 0 24px rgba(0,128,128,0.3);
+    }
+
+    .btn-outline {
+      background: none;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.75rem 1.75rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.78rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s;
+      letter-spacing: 0.02em;
+    }
+    .btn-outline:hover { border-color: var(--teal); color: var(--teal); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Pipeline ── */
+    .pipeline {
+      padding: 2rem 0 5rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.5s forwards;
+    }
+
+    .pipeline-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .pipeline-track {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+    }
+
+    .pipeline-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.1rem 1.5rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-body);
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+      white-space: nowrap;
+      min-width: 110px;
+      text-align: center;
+    }
+    .pipeline-step:hover {
+      border-color: var(--teal);
+      color: var(--text-strong);
+      box-shadow: 0 0 16px rgba(0,128,128,0.12);
+    }
+    .pipeline-step .step-svg { width: 32px; height: 32px; flex-shrink: 0; }
+    .pipeline-step .step-text { display: flex; flex-direction: column; gap: 0.15rem; align-items: center; }
+    .pipeline-step .step-name { font-weight: 600; color: var(--text-strong); font-size: 0.78rem; }
+    .pipeline-step .step-role { color: var(--text-muted); font-size: 0.62rem; margin-left: 0; }
+
+    .pipeline-arrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      padding: 0 0.5rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Section header ── */
+    .section-hd {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .section-kicker {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 600;
+      color: var(--text-strong);
+      letter-spacing: -0.02em;
+    }
+
+    /* ── Tool cards ── */
+    .tools {
+      padding: 5rem 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .tool-card {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 4rem;
+      align-items: center;
+      margin-bottom: 6rem;
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .tool-card.visible { opacity: 1; transform: translateY(0); }
+    .tool-card:last-child { margin-bottom: 0; }
+    .tool-card.reverse { direction: rtl; }
+    .tool-card.reverse > * { direction: ltr; }
+
+    .tool-info {}
+
+    .tool-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--teal-dim);
+      border: 1px solid rgba(0,128,128,0.25);
+      border-radius: 99px;
+      padding: 0.3rem 0.85rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--teal);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+
+    .tool-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 600;
+      color: var(--text-strong);
+      letter-spacing: -0.03em;
+      margin-bottom: 0.65rem;
+      line-height: 1;
+    }
+
+    .tool-tagline {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--teal);
+      margin-bottom: 1rem;
+      letter-spacing: 0.01em;
+    }
+
+    .tool-desc {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 1rem;
+      color: var(--text-body);
+      line-height: 1.78;
+      font-weight: 300;
+      margin-bottom: 1.5rem;
+    }
+
+    .tool-checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .tool-check {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      padding: 0.22rem 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text-muted);
+      background: var(--bg-card);
+    }
+
+    .tool-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--teal);
+      text-decoration: none;
+      border: 1px solid rgba(0,128,128,0.3);
+      border-radius: 4px;
+      padding: 0.55rem 1.1rem;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+    .tool-link:hover {
+      background: var(--teal-dim);
+      border-color: var(--teal);
+      box-shadow: 0 0 16px rgba(0,128,128,0.15);
+    }
+
+    /* ── Tool visual panel ── */
+    .tool-visual {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .tv-bar {
+      background: var(--bg-card-hd);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tv-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+    .tv-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-left: 0.25rem;
+    }
+    .tv-body { padding: 1.25rem; }
+
+    /* Scout visual */
+    .tv-score-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .tv-score {
+      flex: 1;
+      min-width: 70px;
+      background: var(--bg-card-hd);
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      padding: 0.6rem;
+      text-align: center;
+    }
+    .tv-score-n {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 600;
+      line-height: 1;
+      margin-bottom: 0.2rem;
+    }
+    .tv-score-l {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.55rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .tv-score-n.good { color: #5aab72; }
+    .tv-score-n.mid  { color: #c8a060; }
+    .tv-score-n.bad  { color: #c86a5a; }
+
+    .tv-checks {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .tv-check-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-body);
+    }
+    .tv-check-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #5aab72; flex-shrink: 0;
+    }
+    .tv-check-dot.mid  { background: #c8a060; }
+    .tv-check-dot.bad  { background: #c86a5a; }
+    .tv-check-dot.teal { background: var(--teal); }
+    .tv-check-label { flex: 1; }
+    .tv-check-val { color: var(--text-muted); font-size: 0.6rem; }
+
+    /* Canopy visual — ASCII-style tree */
+    .tv-tree {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      line-height: 1.9;
+      color: var(--text-body);
+    }
+    .tv-tree .root  { color: var(--text-strong); font-weight: 600; }
+    .tv-tree .sec   { color: var(--teal); }
+    .tv-tree .leaf  { color: var(--text-muted); }
+    .tv-tree .count {
+      font-size: 0.58rem;
+      color: var(--text-dim);
+      margin-left: 0.35rem;
+    }
+    .tv-tree-line { display: flex; align-items: baseline; gap: 0; }
+
+    /* Waypoint visual */
+    .tv-redirect-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.38rem 0.5rem;
+      border-radius: 3px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.63rem;
+      margin-bottom: 0.3rem;
+      background: var(--bg-card-hd);
+      border: 1px solid var(--border-soft);
+    }
+    .tv-url-old  { color: #c86a5a; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tv-arrow    { color: #333; flex-shrink: 0; }
+    .tv-url-new  { color: #5aab72; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tv-tag      { font-size: 0.58rem; padding: 0.1rem 0.4rem; border-radius: 2px; flex-shrink: 0; }
+    .tv-tag.ok   { background: #172a1c; color: #5aab72; border: 1px solid #243d28; }
+    .tv-tag.pend { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); }
+    .tv-progress {
+      margin-top: 0.85rem;
+      height: 3px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .tv-progress-fill {
+      height: 100%;
+      width: 72%;
+      background: linear-gradient(90deg, var(--teal), var(--teal-bright));
+      border-radius: 99px;
+    }
+    .tv-progress-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+      text-align: right;
+    }
+
+    /* ── Workflow section ── */
+    .workflow {
+      padding: 5rem 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 3rem;
+      position: relative;
+    }
+
+    /* connecting line between cards */
+    .workflow-grid::before {
+      content: '';
+      position: absolute;
+      top: 2.5rem;
+      left: calc(33.33% - 0px);
+      width: 33.33%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--teal), transparent);
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .wf-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.75rem 1.5rem;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.2s, box-shadow 0.2s;
+    }
+    .wf-card.visible { opacity: 1; transform: translateY(0); }
+    .wf-card:hover {
+      border-color: rgba(0,128,128,0.4);
+      box-shadow: 0 0 24px rgba(0,128,128,0.08);
+    }
+
+    .wf-step {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 0.65rem;
+    }
+
+    .wf-emoji { font-size: 1.75rem; display: block; margin-bottom: 0.75rem; line-height: 1; }
+    .wf-svg { width: 36px; height: 36px; display: block; margin-bottom: 0.75rem; flex-shrink: 0; }
+
+    .wf-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-strong);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+    }
+
+    .wf-desc {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.8rem;
+      color: var(--text-body);
+      line-height: 1.65;
+      font-weight: 300;
+      margin-bottom: 1.25rem;
+    }
+
+    .wf-outputs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .wf-output {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .wf-output::before {
+      content: '→';
+      color: var(--teal);
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+
+    .wf-btn {
+      display: inline-block;
+      margin-top: 1.25rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--teal);
+      text-decoration: none;
+      border: 1px solid rgba(0,128,128,0.3);
+      border-radius: 4px;
+      padding: 0.4rem 0.85rem;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .wf-btn:hover {
+      background: var(--teal-dim);
+      border-color: var(--teal);
+    }
+
+    .wf-arrow-out {
+      position: absolute;
+      right: -1.15rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--teal);
+      opacity: 0.5;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .footer-left {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-dim);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.25rem;
+    }
+    .footer-links a {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .footer-links a:hover { color: var(--teal); }
+
+    /* ── Scroll reveal ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 800px) {
+      .tool-card { grid-template-columns: 1fr; gap: 2rem; }
+      .tool-card.reverse { direction: ltr; }
+      .workflow-grid { grid-template-columns: 1fr; }
+      .workflow-grid::before { display: none; }
+      .wf-btn {
+      display: inline-block;
+      margin-top: 1.25rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--teal);
+      text-decoration: none;
+      border: 1px solid rgba(0,128,128,0.3);
+      border-radius: 4px;
+      padding: 0.4rem 0.85rem;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .wf-btn:hover {
+      background: var(--teal-dim);
+      border-color: var(--teal);
+    }
+
+    .wf-arrow-out { display: none; }
+      .pipeline-track { gap: 0.5rem; }
+      .pipeline-arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Nav -->
+  <nav>
+    <a class="nav-logo" href="#">
+      <svg class="suite-logo-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Outer circle — Scout's ring -->
+          <circle cx="16" cy="16" r="13" fill="none" stroke="#008080" stroke-width="1.5" opacity="0.9"/>
+          <!-- Inner triangle — Canopy's geometry, pointing up -->
+          <!-- Three vertices at 270° (top), 30° (bottom-right), 150° (bottom-left) on r=8 -->
+          <!-- top: 16, 8 | bottom-right: 22.93, 20 | bottom-left: 9.07, 20 -->
+          <polygon points="16,8 22.93,20 9.07,20" fill="none" stroke="#008080" stroke-width="1.4" stroke-linejoin="round" opacity="0.75"/>
+          <!-- Centre dot — Waypoint's compass centre -->
+          <circle cx="16" cy="16" r="2.2" fill="#008080"/>
+          <!-- Lines from centre to each vertex — compass spokes -->
+          <line x1="16" y1="16" x2="16" y2="8"     stroke="#008080" stroke-width="1" opacity="0.5"/>
+          <line x1="16" y1="16" x2="22.93" y2="20"  stroke="#008080" stroke-width="1" opacity="0.5"/>
+          <line x1="16" y1="16" x2="9.07"  y2="20"  stroke="#008080" stroke-width="1" opacity="0.5"/>
+          <!-- Node dots at each vertex -->
+          <circle cx="16"    cy="8"  r="1.8" fill="#008080" opacity="0.9"/>
+          <circle cx="22.93" cy="20" r="1.8" fill="#008080" opacity="0.9"/>
+          <circle cx="9.07"  cy="20" r="1.8" fill="#008080" opacity="0.9"/>
+        </svg>
+      the suite
+    </a>
+    <div class="nav-links">
+      <a href="https://elleiana.github.io/Scout/" target="_blank" rel="noopener">🔍 Scout</a>
+      <a href="https://elleiana.github.io/Canopy/" target="_blank" rel="noopener">🌿 Canopy</a>
+      <a href="https://elleiana.github.io/Waypoint/" target="_blank" rel="noopener">🧭 Waypoint</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div style="display:flex;justify-content:center;margin-bottom:1.75rem;opacity:0;animation:fadeUp 0.5s ease 0.05s forwards;">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="#008080" stroke-width="1.5" opacity="0.9"/>
+        <polygon points="16,8 22.93,20 9.07,20" fill="none" stroke="#008080" stroke-width="1.4" stroke-linejoin="round" opacity="0.75"/>
+        <circle cx="16" cy="16" r="2.2" fill="#008080"/>
+        <line x1="16" y1="16" x2="16" y2="8"     stroke="#008080" stroke-width="1" opacity="0.5"/>
+        <line x1="16" y1="16" x2="22.93" y2="20"  stroke="#008080" stroke-width="1" opacity="0.5"/>
+        <line x1="16" y1="16" x2="9.07"  y2="20"  stroke="#008080" stroke-width="1" opacity="0.5"/>
+        <circle cx="16"    cy="8"  r="1.8" fill="#008080" opacity="0.9"/>
+        <circle cx="22.93" cy="20" r="1.8" fill="#008080" opacity="0.9"/>
+        <circle cx="9.07"  cy="20" r="1.8" fill="#008080" opacity="0.9"/>
+      </svg>
+    </div>
+    <div class="hero-kicker">No installs · No logins · No equivalent exchange</div>
+    <h1 class="hero-title">
+      What you have.<br><span class="teal">What it becomes.</span>
+    </h1>
+    <p class="hero-sub">
+      Take a website from discovery through to a clean redirect map.
+    </p>
+
+  </section>
+
+  <!-- Pipeline strip -->
+  <section class="pipeline">
+    <div class="pipeline-label">The workflow</div>
+    <div class="pipeline-track">
+      <a class="pipeline-step" href="https://elleiana.github.io/Scout/" target="_blank" rel="noopener">
+        <svg class="step-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="16" cy="16" r="11" fill="none" stroke="#008080" stroke-width="2.2" opacity="0.9"/>
+          <circle cx="16" cy="16" r="2.8" fill="#008080"/>
+          <line x1="16" y1="5"  x2="16" y2="11" stroke="#008080" stroke-width="2" stroke-linecap="round"/>
+          <line x1="16" y1="21" x2="16" y2="27" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+          <line x1="5"  y1="16" x2="11" y2="16" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+          <line x1="21" y1="16" x2="27" y2="16" stroke="#008080" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="step-text">
+          <span class="step-name">Scout</span>
+          <span class="step-role">audit</span>
+        </div>
+      </a>
+      <span class="pipeline-arrow">——→</span>
+      <a class="pipeline-step" href="https://elleiana.github.io/Canopy/" target="_blank" rel="noopener">
+        <svg class="step-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <polygon points="16,3 26,16 6,16" fill="#008080" opacity="0.9"/>
+          <polygon points="16,12 29,28 3,28" fill="#008080" opacity="0.65"/>
+        </svg>
+        <div class="step-text">
+          <span class="step-name">Canopy</span>
+          <span class="step-role">visualise</span>
+        </div>
+      </a>
+      <span class="pipeline-arrow">——→</span>
+      <a class="pipeline-step" href="https://elleiana.github.io/Waypoint/" target="_blank" rel="noopener">
+        <svg class="step-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <polygon points="16,2 19,14 16,11 13,14" fill="#008080" opacity="0.9"/>
+          <polygon points="16,30 19,18 16,21 13,18" fill="#008080" opacity="0.55"/>
+          <polygon points="2,16 14,13 11,16 14,19" fill="#008080" opacity="0.55"/>
+          <polygon points="30,16 18,13 21,16 18,19" fill="#008080" opacity="0.9"/>
+          <circle cx="16" cy="16" r="2.2" fill="#008080"/>
+        </svg>
+        <div class="step-text">
+          <span class="step-name">Waypoint</span>
+          <span class="step-role">migrate</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Tools -->
+  <section class="tools" id="tools">
+
+    <div class="section-hd reveal">
+      <div class="section-kicker">The tools</div>
+      <h2 class="section-title">No installs. No logins. No spreadsheets.</h2>
+    </div>
+
+    <!-- Scout -->
+    <div class="tool-card" id="card-scout">
+      <div class="tool-info">
+        <div class="tool-badge">Step 1 · Discover</div>
+        <div class="tool-name">Scout</div>
+        <div class="tool-tagline">// website audit tool</div>
+        <p class="tool-desc">
+          Point Scout at any URL and it runs eight automated checks in parallel — Lighthouse scores, security headers, sitemap analysis, tech stack detection, DNS, accessibility, GDPR compliance, and readability. Add your own observations to each section. Export a polished, print-ready report.
+        </p>
+        <div class="tool-checks">
+          <span class="tool-check">⚡ PageSpeed</span>
+          <span class="tool-check">🔒 Security headers</span>
+          <span class="tool-check">♿ Accessibility</span>
+          <span class="tool-check">🗺️ Sitemap</span>
+          <span class="tool-check">🔌 Trackers</span>
+          <span class="tool-check">🛠️ Tech stack</span>
+          <span class="tool-check">📧 DNS / SPF / DMARC</span>
+          <span class="tool-check">📖 Readability</span>
+        </div>
+        <a href="https://elleiana.github.io/Scout/" target="_blank" rel="noopener" class="tool-link">Open Scout →</a>
+      </div>
+      <div class="tool-visual">
+        <div class="tv-bar">
+          <div class="tv-dot"></div><div class="tv-dot"></div><div class="tv-dot"></div>
+          <span class="tv-title">Scout // website audit tool</span>
+        </div>
+        <div class="tv-body">
+          <div class="tv-score-row">
+            <div class="tv-score">
+              <div class="tv-score-n good">94</div>
+              <div class="tv-score-l">Perf</div>
+            </div>
+            <div class="tv-score">
+              <div class="tv-score-n mid">78</div>
+              <div class="tv-score-l">A11y</div>
+            </div>
+            <div class="tv-score">
+              <div class="tv-score-n good">B</div>
+              <div class="tv-score-l">Security</div>
+            </div>
+            <div class="tv-score">
+              <div class="tv-score-n good">91</div>
+              <div class="tv-score-l">SEO</div>
+            </div>
+          </div>
+          <div class="tv-checks">
+            <div class="tv-check-row"><div class="tv-check-dot"></div><span class="tv-check-label">HTTPS enforced</span><span class="tv-check-val">✓</span></div>
+            <div class="tv-check-row"><div class="tv-check-dot bad"></div><span class="tv-check-label">Missing CSP header</span><span class="tv-check-val">high</span></div>
+            <div class="tv-check-row"><div class="tv-check-dot mid"></div><span class="tv-check-label">No DMARC record</span><span class="tv-check-val">high</span></div>
+            <div class="tv-check-row"><div class="tv-check-dot"></div><span class="tv-check-label">732 pages in sitemap</span><span class="tv-check-val">✓</span></div>
+            <div class="tv-check-row"><div class="tv-check-dot mid"></div><span class="tv-check-label">Mobile LCP 3.2s</span><span class="tv-check-val">mid</span></div>
+            <div class="tv-check-row"><div class="tv-check-dot teal"></div><span class="tv-check-label">Readability: Standard</span><span class="tv-check-val">65</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canopy -->
+    <div class="tool-card reverse" id="card-canopy">
+      <div class="tool-info">
+        <div class="tool-badge">Step 2 · Visualise</div>
+        <div class="tool-name">Canopy</div>
+        <div class="tool-tagline">// sitemap toolkit</div>
+        <p class="tool-desc">
+          Crawl any site and Canopy maps every internal URL into an interactive tree. Explore by section and depth, collapse branches, click nodes for detail. Export the diagram as a PNG or SVG — useful for presentations, proposals, or understanding a site before a redesign.
+        </p>
+        <div class="tool-checks">
+          <span class="tool-check">🕷️ Live crawler</span>
+          <span class="tool-check">🌳 Tree diagram</span>
+          <span class="tool-check">↕ Depth control</span>
+          <span class="tool-check">🎨 Colour themes</span>
+          <span class="tool-check">🖼️ PNG / SVG export</span>
+          <span class="tool-check">📋 CSV / JSON</span>
+        </div>
+        <a href="https://elleiana.github.io/Canopy/" target="_blank" rel="noopener" class="tool-link">Open Canopy →</a>
+      </div>
+      <div class="tool-visual">
+        <div class="tv-bar">
+          <div class="tv-dot"></div><div class="tv-dot"></div><div class="tv-dot"></div>
+          <span class="tv-title">Canopy // sitemap toolkit</span>
+        </div>
+        <div class="tv-body">
+          <div class="tv-tree">
+            <div class="tv-tree-line"><span class="root">/ example.com</span></div>
+            <div class="tv-tree-line"><span style="color:var(--text-dim)">├── </span><span class="sec">/services</span><span class="count">42 pages</span></div>
+            <div class="tv-tree-line"><span style="color:var(--text-dim)">│&nbsp;&nbsp; ├── </span><span class="leaf">/web-design</span></div>
+            <div class="tv-tree-line"><span style="color:var(--text-dim)">│&nbsp;&nbsp; └── </span><span class="leaf">/seo</span></div>
+            <div class="tv-tree-line"><span style="color:var(--text-dim)">├── </span><span class="sec">/blog</span><span class="count">231 pages</span></div>
+            <div class="tv-tree-line"><span style="color:var(--text-dim)">│&nbsp;&nbsp; ├── </span><span class="leaf">/category</span></div>
+            <div class="tv-tree-line"><span style="color:var(--text-dim)">│&nbsp;&nbsp; └── </span><span class="leaf">…229 more</span></div>
+            <div class="tv-tree-line"><span style="color:var(--text-dim)">├── </span><span class="sec">/about</span><span class="count">8 pages</span></div>
+            <div class="tv-tree-line"><span style="color:var(--text-dim)">└── </span><span class="sec">/careers</span><span class="count">12 pages</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Waypoint -->
+    <div class="tool-card" id="card-waypoint">
+      <div class="tool-info">
+        <div class="tool-badge">Step 3 · Migrate</div>
+        <div class="tool-name">Waypoint</div>
+        <div class="tool-tagline">// site migration toolkit</div>
+        <p class="tool-desc">
+          Paste in your old and new URL lists and Waypoint cross-references them — suggesting the best redirect for every changed URL, flagging loops, chains, and mergers, and letting you confirm or adjust each one. Export in CSV, .htaccess, or Nginx format when you're done.
+        </p>
+        <div class="tool-checks">
+          <span class="tool-check">🗺️ URL mapper</span>
+          <span class="tool-check">🧪 Loop + chain detection</span>
+          <span class="tool-check">🕷️ Built-in spider</span>
+          <span class="tool-check">📊 Validator</span>
+          <span class="tool-check">↓ .htaccess / Nginx / CSV</span>
+          <span class="tool-check">🔗 Shareable sessions</span>
+        </div>
+        <a href="https://elleiana.github.io/Waypoint/" target="_blank" rel="noopener" class="tool-link">Open Waypoint →</a>
+      </div>
+      <div class="tool-visual">
+        <div class="tv-bar">
+          <div class="tv-dot"></div><div class="tv-dot"></div><div class="tv-dot"></div>
+          <span class="tv-title">Waypoint // site migration toolkit</span>
+        </div>
+        <div class="tv-body">
+          <div class="tv-redirect-row">
+            <span class="tv-url-old">/services/web-design</span>
+            <span class="tv-arrow">→</span>
+            <span class="tv-url-new">/our-work/web</span>
+            <span class="tv-tag ok">301 ✓</span>
+          </div>
+          <div class="tv-redirect-row">
+            <span class="tv-url-old">/blog/category/seo</span>
+            <span class="tv-arrow">→</span>
+            <span class="tv-url-new">/insights/seo</span>
+            <span class="tv-tag ok">301 ✓</span>
+          </div>
+          <div class="tv-redirect-row">
+            <span class="tv-url-old">/about-us</span>
+            <span class="tv-arrow">→</span>
+            <span class="tv-url-new">/about</span>
+            <span class="tv-tag ok">301 ✓</span>
+          </div>
+          <div class="tv-redirect-row">
+            <span class="tv-url-old">/contact-us</span>
+            <span class="tv-arrow">→</span>
+            <span class="tv-url-new">/contact</span>
+            <span class="tv-tag pend">review</span>
+          </div>
+          <div class="tv-progress"><div class="tv-progress-fill"></div></div>
+          <div class="tv-progress-label">72% complete · 187 / 261 confirmed</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Workflow -->
+  <section class="workflow" id="workflow">
+    <div class="section-hd reveal">
+      <div class="section-kicker">How they connect</div>
+      <h2 class="section-title">A pipeline, not just three tools</h2>
+    </div>
+
+    <div class="workflow-grid">
+      <div class="wf-card" id="wf-1">
+        <div class="wf-step">Step 01</div>
+        <svg class="wf-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="16" cy="16" r="11" fill="none" stroke="#008080" stroke-width="2.2" opacity="0.9"/>
+          <circle cx="16" cy="16" r="2.8" fill="#008080"/>
+          <line x1="16" y1="5"  x2="16" y2="11" stroke="#008080" stroke-width="2" stroke-linecap="round"/>
+          <line x1="16" y1="21" x2="16" y2="27" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+          <line x1="5"  y1="16" x2="11" y2="16" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+          <line x1="21" y1="16" x2="27" y2="16" stroke="#008080" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="wf-name">Read the site</div>
+        <p class="wf-desc">Scout runs automated checks across performance, security, content, and accessibility — then lets you layer in your own observations and export a client-ready report.</p>
+        <div class="wf-outputs">
+          <span class="wf-output">Client-ready audit report</span>
+          <span class="wf-output">Auto-detected findings</span>
+          <span class="wf-output">URL list → Canopy or Waypoint</span>
+        </div>
+        <a href="https://elleiana.github.io/Scout/" target="_blank" rel="noopener" class="wf-btn">Open Scout →</a>
+        <div class="wf-arrow-out">→</div>
+      </div>
+
+      <div class="wf-card" id="wf-2">
+        <div class="wf-step">Step 02</div>
+        <svg class="wf-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <polygon points="16,3 26,16 6,16" fill="#008080" opacity="0.9"/>
+          <polygon points="16,12 29,28 3,28" fill="#008080" opacity="0.65"/>
+        </svg>
+        <div class="wf-name">See the architecture</div>
+        <p class="wf-desc">Canopy crawls the site and renders its full URL structure as an interactive tree — every section, every depth level, every page. Export as a diagram or pass the URL list to Waypoint.</p>
+        <div class="wf-outputs">
+          <span class="wf-output">Visual tree diagram</span>
+          <span class="wf-output">Section + depth analysis</span>
+          <span class="wf-output">URL list → Waypoint</span>
+        </div>
+        <a href="https://elleiana.github.io/Canopy/" target="_blank" rel="noopener" class="wf-btn">Open Canopy →</a>
+        <div class="wf-arrow-out">→</div>
+      </div>
+
+      <div class="wf-card" id="wf-3">
+        <div class="wf-step">Step 03</div>
+        <svg class="wf-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <polygon points="16,2 19,14 16,11 13,14" fill="#008080" opacity="0.9"/>
+          <polygon points="16,30 19,18 16,21 13,18" fill="#008080" opacity="0.55"/>
+          <polygon points="2,16 14,13 11,16 14,19" fill="#008080" opacity="0.55"/>
+          <polygon points="30,16 18,13 21,16 18,19" fill="#008080" opacity="0.9"/>
+          <circle cx="16" cy="16" r="2.2" fill="#008080"/>
+        </svg>
+        <div class="wf-name">Plan the migration</div>
+        <p class="wf-desc">Waypoint takes old and new URL lists, suggests redirect matches, catches loops and chains, and exports a developer-ready map. Old structure, new form.</p>
+        <div class="wf-outputs">
+          <span class="wf-output">.htaccess / Nginx / CSV export</span>
+          <span class="wf-output">Loop + chain detection</span>
+          <span class="wf-output">Shareable session link</span>
+        </div>
+        <a href="https://elleiana.github.io/Waypoint/" target="_blank" rel="noopener" class="wf-btn">Open Waypoint →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-left">🐯</div>
+    <div class="footer-links">
+      <a href="https://elleiana.github.io/Scout/" target="_blank" rel="noopener">🔍 Scout</a>
+      <a href="https://elleiana.github.io/Canopy/" target="_blank" rel="noopener">🌿 Canopy</a>
+      <a href="https://elleiana.github.io/Waypoint/" target="_blank" rel="noopener">🧭 Waypoint</a>
+      <a href="https://github.com/Elleiana" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </footer>
+
+</div><!-- /wrap -->
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  // Tool cards
+  ['card-scout','card-canopy','card-waypoint'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el);
+  });
+
+  // Workflow cards with stagger
+  ['wf-1','wf-2','wf-3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.transitionDelay = (i * 0.12) + 's';
+    observer.observe(el);
+  });
+
+  // Generic reveal elements
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
