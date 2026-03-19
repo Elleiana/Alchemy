@@ -2804,8 +2804,8 @@ function init(project) {
     const empty = document.getElementById('diagram-empty');
     if (empty) {
       empty.classList.remove('hidden');
-      empty.querySelector('.card-body').textContent =
-        'No crawl data yet — run a crawl in the Foundry tab first.';
+      empty.querySelector('.card-body').innerHTML =
+        'No crawl data yet — go to <strong>Foundry › Crawl</strong> and run a crawl first.';
     }
   }
 }
