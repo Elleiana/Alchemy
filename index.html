@@ -818,6 +818,99 @@
     .page { display: none; }
     .page.active { display: block; }
 
+    /* ── tool content area ── */
+    #page-tool {
+      display: none;
+      height: 100%;
+      width: 100%;
+      overflow-y: auto;
+      padding: 0;
+    }
+    #page-tool.active {
+      display: block;
+    }
+    /* tool inject container — tool body renders here */
+    #tool-mount {
+      min-height: 100%;
+      padding: 2.25rem 2.5rem 3.5rem;
+      position: relative;
+    }
+    /* tool heading bar — name + internal tab nav */
+    #tool-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-bottom: 1.75rem;
+      flex-wrap: wrap;
+    }
+    .tool-heading-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .tool-heading-icon {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      opacity: 0.9;
+    }
+    .tool-heading-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--text-strong);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .tool-heading-sub {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+    /* internal tab nav (Audit/Export, Diagram/Export, etc.) */
+    .tool-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tool-tab {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 0.5rem 1rem 0.6rem;
+      cursor: pointer;
+      transition: color 0.12s, border-color 0.12s;
+      margin-bottom: -1px;
+      white-space: nowrap;
+    }
+    .tool-tab:hover { color: var(--text-body); }
+    .tool-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+    /* tool loading state */
+    #tool-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      gap: 0.5rem;
+    }
+    .tool-loading-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--teal);
+      animation: tld 1.2s ease-in-out infinite;
+    }
+    .tool-loading-dot:nth-child(2) { animation-delay: 0.2s; }
+    .tool-loading-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes tld { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
     /* ── new project form ── */
     .new-project-form { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem 1.75rem; margin-bottom: 2rem; }
     .npf-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.1rem; }
@@ -944,8 +1037,8 @@
       </div>
     </div>
     <div class="topbar-actions">
-      <button class="topbar-btn" onclick="navigator.clipboard.writeText(location.href)">🔗 Share</button>
-      <button class="topbar-btn primary" onclick="alert('Saved')">↓ Save</button>
+      <button class="topbar-btn" id="topbar-share-btn" onclick="copyProjectLink()">🔗 Share</button>
+      <button class="topbar-btn primary" onclick="saveProjectNow()">↓ Save</button>
       <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
     </div>
   </div>
@@ -1029,9 +1122,8 @@
       <div class="sidebar-section">
         <div class="sidebar-label">Pipeline</div>
 
-        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+        <button class="nav-item" id="nav-scout" onclick="loadTool('scout', this)">
           <div class="nav-item-left">
-            <!-- Scout — crosshair -->
             <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <circle cx="16" cy="16" r="11" fill="none" stroke="#008080" stroke-width="2.2" opacity="0.9"/>
               <circle cx="16" cy="16" r="2.8" fill="#008080"/>
@@ -1042,36 +1134,33 @@
             </svg>
             <span class="nav-item-name">Scout</span>
           </div>
-          <span class="nav-status ns-done">done</span>
+          <span class="nav-status ns-done" id="ns-scout">—</span>
         </button>
 
-        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+        <button class="nav-item" id="nav-canopy" onclick="loadTool('canopy', this)">
           <div class="nav-item-left">
-            <!-- Canopy — double triangle tree -->
             <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <polygon points="16,3 26,16 6,16" fill="#008080" opacity="0.9"/>
               <polygon points="16,12 29,28 3,28" fill="#008080" opacity="0.65"/>
             </svg>
             <span class="nav-item-name">Canopy</span>
           </div>
-          <span class="nav-status ns-done">done</span>
+          <span class="nav-status ns-soon" id="ns-canopy">—</span>
         </button>
 
-        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+        <button class="nav-item" id="nav-atlas" onclick="loadTool('atlas', this)">
           <div class="nav-item-left">
-            <!-- Atlas — location marker: circle + downward triangle -->
             <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <circle cx="16" cy="11" r="8" fill="#008080" opacity="0.9"/>
               <polygon points="16,30 8,16 24,16" fill="#008080" opacity="0.6"/>
             </svg>
             <span class="nav-item-name">Atlas</span>
           </div>
-          <span class="nav-status ns-active">active</span>
+          <span class="nav-status ns-soon" id="ns-atlas">soon</span>
         </button>
 
-        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+        <button class="nav-item" id="nav-forge" onclick="loadTool('forge', this)">
           <div class="nav-item-left">
-            <!-- Forge — anvil: wide top face, tapered body, wide base -->
             <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <rect x="3"  y="7"  width="26" height="7" rx="1" fill="#008080" opacity="0.9"/>
               <rect x="10" y="14" width="12" height="5"  rx="1" fill="#008080" opacity="0.7"/>
@@ -1079,12 +1168,11 @@
             </svg>
             <span class="nav-item-name">Forge</span>
           </div>
-          <span class="nav-status ns-soon">soon</span>
+          <span class="nav-status ns-soon" id="ns-forge">soon</span>
         </button>
 
-        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+        <button class="nav-item" id="nav-waypoint" onclick="loadTool('waypoint', this)">
           <div class="nav-item-left">
-            <!-- Waypoint — four arrows compass -->
             <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <polygon points="16,2 19,14 16,11 13,14"  fill="#008080" opacity="0.9"/>
               <polygon points="16,30 19,18 16,21 13,18" fill="#008080" opacity="0.55"/>
@@ -1094,24 +1182,22 @@
             </svg>
             <span class="nav-item-name">Waypoint</span>
           </div>
-          <span class="nav-status ns-active">active</span>
+          <span class="nav-status ns-soon" id="ns-waypoint">—</span>
         </button>
 
-        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+        <button class="nav-item" id="nav-warden" onclick="loadTool('warden', this)">
           <div class="nav-item-left">
-            <!-- Warden — shield -->
             <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path d="M16 3 L28 8 L28 17 Q28 24 16 29 Q4 24 4 17 L4 8 Z" fill="none" stroke="#008080" stroke-width="2" stroke-linejoin="round" opacity="0.9"/>
               <path d="M16 8 L24 11.5 L24 17 Q24 21.5 16 25 Q8 21.5 8 17 L8 11.5 Z" fill="#008080" opacity="0.45"/>
             </svg>
             <span class="nav-item-name">Warden</span>
           </div>
-          <span class="nav-status ns-soon">soon</span>
+          <span class="nav-status ns-soon" id="ns-warden">soon</span>
         </button>
 
-        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+        <button class="nav-item" id="nav-charter" onclick="loadTool('charter', this)">
           <div class="nav-item-left">
-            <!-- Charter — three stepped strokes: sequence, schedule, delivery -->
             <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <line x1="4"  y1="9"  x2="28" y2="9"  stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
               <line x1="4"  y1="17" x2="20" y2="17" stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
@@ -1119,7 +1205,7 @@
             </svg>
             <span class="nav-item-name">Charter</span>
           </div>
-          <span class="nav-status ns-soon">soon</span>
+          <span class="nav-status ns-soon" id="ns-charter">soon</span>
         </button>
       </div>
 
@@ -1128,7 +1214,7 @@
       <!-- Export -->
       <div class="sidebar-section">
         <div class="sidebar-label">Export</div>
-        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+        <button class="nav-item" onclick="exportAlchemyFile()">
           <div class="nav-item-left">
             <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <line x1="16" y1="4" x2="16" y2="22" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
@@ -1673,6 +1759,19 @@
         </div><!-- /crawl-content -->
       </div><!-- /page-crawl -->
 
+      <!-- ══════════════════════════════════════
+           PAGE: TOOL (fetch + inject target)
+      ══════════════════════════════════════ -->
+      <div class="page" id="page-tool">
+        <div id="tool-loading" style="display:none;">
+          <div class="tool-loading-dot"></div>
+          <div class="tool-loading-dot"></div>
+          <div class="tool-loading-dot"></div>
+          <span id="tool-loading-label">Loading…</span>
+        </div>
+        <div id="tool-mount"></div>
+      </div>
+
     </main>
   </div>
 
@@ -1688,6 +1787,238 @@
 const FOUNDRY_STORE = 'https://foundrystore.libertyhphillips.workers.dev';
 const FOUNDRY_PROXY = 'https://waypointspider.libertyhphillips.workers.dev';
 const HISTORY_KEY   = 'foundry_history_v1';
+
+/* ═══════════════════════════════════════════
+   Tool registry
+═══════════════════════════════════════════ */
+const TOOL_REGISTRY = {
+  scout:    { name: 'Scout',    sub: '// website audit',      path: 'Scout/index.html',    available: true  },
+  canopy:   { name: 'Canopy',   sub: '// site structure',     path: 'Canopy/index.html',   available: true  },
+  waypoint: { name: 'Waypoint', sub: '// redirect mapping',   path: 'Waypoint/index.html', available: true  },
+  atlas:    { name: 'Atlas',    sub: '// content inventory',  path: null,                  available: false },
+  forge:    { name: 'Forge',    sub: '// IA designer',        path: null,                  available: false },
+  warden:   { name: 'Warden',   sub: '// launch validation',  path: null,                  available: false },
+  charter:  { name: 'Charter',  sub: '// project roadmap',    path: null,                  available: false },
+};
+
+/* ═══════════════════════════════════════════
+   Active tool state
+═══════════════════════════════════════════ */
+let activeTool = null; // key of currently loaded tool
+
+/* ═══════════════════════════════════════════
+   loadTool — fetch, inject, init
+═══════════════════════════════════════════ */
+async function loadTool(key, navBtn) {
+  if (!activeProject) {
+    alert('Open or create a project first.');
+    return;
+  }
+
+  const meta = TOOL_REGISTRY[key];
+  if (!meta) return;
+
+  if (!meta.available || !meta.path) {
+    // Coming soon — just update active state, don't navigate
+    setNavActive(navBtn);
+    return;
+  }
+
+  // Guard: don't reload the same tool
+  if (activeTool === key) {
+    setNavActive(navBtn);
+    showPage('tool', null);
+    return;
+  }
+
+  setNavActive(navBtn);
+  activeTool = key;
+
+  // Record openedAt
+  const t = activeProject.tools[key];
+  if (t && !t.openedAt) {
+    t.openedAt = new Date().toISOString();
+    activeProject.updatedAt = new Date().toISOString();
+    upsertHistoryEntry(activeProject);
+    storeProject(activeProject).catch(() => {});
+    updateSidebarPills();
+  }
+
+  // Show loading state
+  const mount    = document.getElementById('tool-mount');
+  const loading  = document.getElementById('tool-loading');
+  const loadLbl  = document.getElementById('tool-loading-label');
+  mount.innerHTML = '';
+  loading.style.display = 'flex';
+  loadLbl.textContent = 'Loading ' + meta.name + '…';
+  showPage('tool', null);
+
+  // Push URL state
+  if (activeProject) {
+    const url = '?project=' + activeProject.id + '&tool=' + key;
+    try { history.pushState({ project: activeProject.id, tool: key }, '', url); } catch(e) {}
+  }
+
+  try {
+    const res  = await fetch(meta.path);
+    const html = await res.text();
+    const parser = new DOMParser();
+    const doc  = parser.parseFromString(html, 'text/html');
+
+    // Remove tool's own chrome — header, footer, theme toggle, session bars
+    ['header', 'footer', '.btn-theme', '.session-bar', '#page-home'].forEach(sel => {
+      doc.querySelectorAll(sel).forEach(el => el.remove());
+    });
+
+    // Extract and inject styles (tagged so we can clean up on tool switch)
+    document.querySelectorAll('style[data-tool]').forEach(s => s.remove());
+    doc.querySelectorAll('style').forEach(s => {
+      const tag = document.createElement('style');
+      tag.setAttribute('data-tool', key);
+      tag.textContent = s.textContent;
+      document.head.appendChild(tag);
+    });
+
+    // Inject body content
+    loading.style.display = 'none';
+    mount.innerHTML = doc.body ? doc.body.innerHTML : '';
+
+    // Extract and run scripts
+    const scripts = doc.querySelectorAll('script');
+    for (const s of scripts) {
+      const el = document.createElement('script');
+      if (s.src) {
+        el.src = s.src;
+        document.head.appendChild(el);
+        await new Promise(r => { el.onload = r; el.onerror = r; });
+      } else {
+        el.textContent = s.textContent;
+        document.body.appendChild(el);
+      }
+    }
+
+    // Call the tool's init function with the active project
+    const initFn = window[capitalize(key)];
+    if (initFn && typeof initFn.init === 'function') {
+      initFn.init(activeProject);
+    }
+
+  } catch (err) {
+    loading.style.display = 'none';
+    mount.innerHTML = '<div style="padding:3rem 2rem;font-family:\'IBM Plex Mono\',monospace;font-size:0.78rem;color:var(--err);">Failed to load ' + meta.name + '. Make sure the file exists at ' + meta.path + '.</div>';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   onToolEvent — tools call this to communicate
+   back to Alchemy without knowing its internals
+═══════════════════════════════════════════ */
+function onToolEvent(type, data) {
+  if (type === 'tool:complete') {
+    const key = data.tool || activeTool;
+    if (!key || !activeProject) return;
+    const t = activeProject.tools[key];
+    if (!t) return;
+    t.complete = true;
+    activeProject.updatedAt = new Date().toISOString();
+    upsertHistoryEntry(activeProject);
+    storeProject(activeProject).catch(() => {});
+    updateSidebarPills();
+    renderOverview();
+  }
+
+  if (type === 'tool:save') {
+    // Tool is passing back updated data to persist in the project
+    const key = data.tool || activeTool;
+    if (!key || !activeProject) return;
+    if (!activeProject.toolData) activeProject.toolData = {};
+    activeProject.toolData[key] = data.payload;
+    activeProject.updatedAt = new Date().toISOString();
+    upsertHistoryEntry(activeProject);
+    storeProject(activeProject).catch(() => {});
+  }
+
+  if (type === 'tool:navigate') {
+    // Tool is requesting navigation to another tool
+    const targetKey = data.tool;
+    const navBtn = document.getElementById('nav-' + targetKey);
+    if (navBtn) loadTool(targetKey, navBtn);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   saveProjectNow — topbar Save button
+═══════════════════════════════════════════ */
+function saveProjectNow() {
+  if (!activeProject) return;
+  const btn = document.querySelector('.topbar-btn.primary');
+  storeProject(activeProject).then(() => {
+    if (btn) { btn.textContent = '✓ Saved'; setTimeout(() => { btn.textContent = '↓ Save'; }, 2000); }
+  }).catch(() => {
+    if (btn) { btn.textContent = '✗ Error'; setTimeout(() => { btn.textContent = '↓ Save'; }, 2000); }
+  });
+}
+
+/* ═══════════════════════════════════════════
+   URL state — read ?project= and ?tool= on load
+═══════════════════════════════════════════ */
+function readUrlParams() {
+  const params = new URLSearchParams(location.search);
+  const projectId = params.get('project');
+  const toolKey   = params.get('tool');
+  return { projectId, toolKey };
+}
+
+/* ═══════════════════════════════════════════
+   updateSidebarPills — sync pill states from project
+═══════════════════════════════════════════ */
+function updateSidebarPills() {
+  if (!activeProject) return;
+  Object.keys(TOOL_REGISTRY).forEach(key => {
+    const pill = document.getElementById('ns-' + key);
+    if (!pill) return;
+    const t = activeProject.tools[key];
+    pill.className = 'nav-status';
+    if (!TOOL_REGISTRY[key].available) {
+      pill.textContent = 'soon';
+      pill.classList.add('ns-soon');
+    } else if (t && t.complete) {
+      pill.textContent = 'done';
+      pill.classList.add('ns-done');
+    } else if (t && t.openedAt) {
+      pill.textContent = 'active';
+      pill.classList.add('ns-active');
+    } else {
+      pill.textContent = '—';
+      pill.classList.add('ns-soon');
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════
+   setNavActive — centralised nav active state
+═══════════════════════════════════════════ */
+function setNavActive(navBtn) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navBtn) navBtn.classList.add('active');
+}
+
+/* ═══════════════════════════════════════════
+   capitalize — 'scout' → 'Scout'
+═══════════════════════════════════════════ */
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+/* ═══════════════════════════════════════════
+   exportAlchemyFile
+═══════════════════════════════════════════ */
+function exportAlchemyFile() {
+  if (!activeProject) return;
+  const blob = new Blob([JSON.stringify(activeProject, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (activeProject.name || 'project').replace(/[^a-z0-9]/gi, '-').toLowerCase() + '.alchemy';
+  a.click();
+}
 
 /* ═══════════════════════════════════════════
    State
@@ -1720,14 +2051,28 @@ function showPage(name, navBtn) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navBtn) navBtn.classList.add('active');
 
+  // Reset activeTool if navigating away from a tool page
+  if (name !== 'tool') activeTool = null;
+
   if (name === 'projects') renderProjectsList();
-  if (name === 'overview') renderOverview();
-  if (name === 'crawl')    renderCrawlPage();
+  if (name === 'overview') {
+    renderOverview();
+    // Update URL back to project-only when on overview
+    if (activeProject) {
+      try { history.pushState({ project: activeProject.id, tool: null }, '', '?project=' + activeProject.id); } catch(e) {}
+    }
+  }
+  if (name === 'crawl') renderCrawlPage();
 }
 
 function setProjectActive(project) {
   activeProject = project;
+  activeTool = null;
   document.body.classList.toggle('has-project', !!project);
+  if (project) {
+    updateSidebarPills();
+    try { history.pushState({ project: project.id, tool: null }, '', '?project=' + project.id); } catch(e) {}
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -2148,7 +2493,8 @@ function updateTopbar() {
 
 function copyProjectLink() {
   if (!activeProject) return;
-  const link = 'https://elleiana.github.io/Alchemy/#p=' + activeProject.id;
+  let link = 'https://elleiana.github.io/Alchemy/?project=' + activeProject.id;
+  if (activeTool) link += '&tool=' + activeTool;
   navigator.clipboard.writeText(link).then(() => {
     const btn = document.getElementById('topbar-share-btn');
     if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => { btn.textContent = '🔗 Share'; }, 2000); }
@@ -2745,20 +3091,14 @@ function renderEmptyState() {
 /* ═══════════════════════════════════════════
    On load
 ═══════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Enter key on new project form
   const nameInput = document.getElementById('npf-name');
   const urlInput  = document.getElementById('npf-url');
   if (nameInput) nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') urlInput.focus(); });
   if (urlInput)  urlInput.addEventListener('keydown',  e => { if (e.key === 'Enter') createProject(); });
 
-  // Seed demo data if localStorage is empty
-  seedDemoData();
-
-  // Render projects list on load
-  renderProjectsList();
-
-  // Snail animation CSS — add to head dynamically (was in old CSS but references ID)
+  // Snail animation CSS
   const style = document.createElement('style');
   style.textContent = `
     #snail-emoji.crawling { animation: snailWalk 2.6s ease-in-out infinite; }
@@ -2771,6 +3111,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   `;
   document.head.appendChild(style);
+
+  // Seed demo data if localStorage is empty
+  seedDemoData();
+
+  // Render projects list
+  renderProjectsList();
+
+  // ── URL param boot ──
+  // ?project=fx_xxx  → load that project
+  // ?project=fx_xxx&tool=scout → load project, then load tool
+  const { projectId, toolKey } = readUrlParams();
+
+  if (projectId) {
+    // Show a loading indicator in the topbar while we fetch
+    const nameEl = document.querySelector('.topbar-project-name');
+    if (nameEl) nameEl.textContent = 'Loading…';
+    document.body.classList.add('has-project');
+
+    try {
+      await loadProject(projectId);
+      // loadProject calls setProjectActive which renders overview
+      // If a tool was also in the URL, navigate straight to it
+      if (toolKey && TOOL_REGISTRY[toolKey] && TOOL_REGISTRY[toolKey].available) {
+        const navBtn = document.getElementById('nav-' + toolKey);
+        await loadTool(toolKey, navBtn);
+      }
+    } catch (e) {
+      // Project not found — fall through to normal boot
+      document.body.classList.remove('has-project');
+      showPage('overview', document.querySelector('.nav-item[onclick*="overview"]'));
+    }
+  } else {
+    // Normal boot — land on overview (greeting state if no project, content if one exists)
+    const history = getHistory();
+    if (history.length) {
+      // Restore the most recently active project from localStorage
+      await loadProject(history[0].id);
+    } else {
+      showPage('overview', document.querySelector('.nav-item[onclick*="overview"]'));
+    }
+  }
+
+  // Handle browser back/forward
+  window.addEventListener('popstate', async (e) => {
+    const state = e.state;
+    if (state && state.project) {
+      await loadProject(state.project);
+      if (state.tool && TOOL_REGISTRY[state.tool] && TOOL_REGISTRY[state.tool].available) {
+        const navBtn = document.getElementById('nav-' + state.tool);
+        await loadTool(state.tool, navBtn);
+      } else {
+        const overviewBtn = document.querySelector('.nav-item[onclick*="overview"]');
+        showPage('overview', overviewBtn);
+      }
+    }
+  });
 });
 
 /* ═══════════════════════════════════════════
