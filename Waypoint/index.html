@@ -1009,16 +1009,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ── Theme toggle ───────────────────────────────────────────────────────────────
-const btnTheme = document.getElementById('btn-theme');
-const savedTheme = localStorage.getItem('rm-theme') || 'dark';
-if (savedTheme === 'light') { document.documentElement.classList.add('light'); btnTheme.textContent = '🌙'; }
-
-btnTheme.addEventListener('click', () => {
-  const isLight = document.documentElement.classList.toggle('light');
-  btnTheme.textContent = isLight ? '🌙' : '☀️';
-  localStorage.setItem('rm-theme', isLight ? 'light' : 'dark');
-});
+// Theme managed by Alchemy shell
 
 // ── Page switching ─────────────────────────────────────────────────────────────
 // ── Canopy handoff banner ────────────────────────────────────────────────────
