@@ -510,6 +510,10 @@
     .tb-done { background: var(--ok-bg);   color: var(--ok);   border: 1px solid var(--ok-bd); }
     .tb-wip  { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-bd); }
     .tb-idle { background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-inner); }
+    .tc-badge[onclick], .tc-badge[style*="cursor"] {
+      transition: opacity 0.12s, transform 0.1s;
+    }
+    .tc-badge[style*="cursor"]:hover { opacity: 0.75; transform: scale(0.97); }
     .tb-soon { background: var(--bg-input); color: var(--text-dim);   border: 1px solid var(--border-inner); }
 
     .tc-body { padding: 1rem 1.15rem; flex: 1; display: flex; flex-direction: column; gap: 0.7rem; }
@@ -1104,6 +1108,7 @@
             </svg>
             <span class="nav-item-name">Crawl</span>
           </div>
+          <span class="nav-status" id="ns-crawl"></span>
         </button>
 
         <button class="nav-item" id="nav-settings" onclick="showPage('settings', this)">
@@ -2017,6 +2022,8 @@ function readUrlParams() {
 ═══════════════════════════════════════════ */
 function updateSidebarPills() {
   if (!activeProject) return;
+
+  // Tool pills
   Object.keys(TOOL_REGISTRY).forEach(key => {
     const pill = document.getElementById('ns-' + key);
     if (!pill) return;
@@ -2036,6 +2043,27 @@ function updateSidebarPills() {
       pill.classList.add('ns-soon');
     }
   });
+
+  // Crawl pill — reflects actual crawl state
+  const crawlPill = document.getElementById('ns-crawl');
+  if (crawlPill) {
+    const crawl = activeProject.crawl;
+    const status = crawl && crawl.status;
+    crawlPill.style.display = '';
+    if (status === 'complete' || status === 'imported') {
+      crawlPill.textContent = 'done';
+      crawlPill.className = 'nav-status ns-done';
+    } else if (status === 'stopped' && crawl.totalUrls > 0) {
+      crawlPill.textContent = 'partial';
+      crawlPill.className = 'nav-status ns-active';
+    } else if (crawlState.running) {
+      crawlPill.textContent = 'running';
+      crawlPill.className = 'nav-status ns-active';
+    } else {
+      crawlPill.textContent = '—';
+      crawlPill.className = 'nav-status ns-soon';
+    }
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -2478,47 +2506,41 @@ function renderOverview() {
   setText('ov-sc-atlas-n', atlas && atlas.complete ? '✓' : atlas && atlas.openedAt ? '→' : '—');
   setText('ov-sc-atlas-meta', atlas && atlas.openedAt ? 'opened ' + formatDate(atlas.openedAt) : 'not opened');
 
-  /* ── Tool cards: badge, complete btn, opened, open btn disabled state ── */
+  /* ── Tool cards: clickable badge cycles state, open btn calls loadTool ── */
   const hasCrawl = crawl && crawl.results && crawl.results.length > 0;
 
   ['scout','canopy','waypoint'].forEach(key => {
-    const t      = tools[key];
-    const card   = document.getElementById('tc-' + key);
-    const badge  = document.getElementById('tc-' + key + '-badge');
-    const cmpl   = document.getElementById('tc-' + key + '-complete');
-    const opened = document.getElementById('tc-' + key + '-opened');
+    const t       = tools[key];
+    const card    = document.getElementById('tc-' + key);
+    const badge   = document.getElementById('tc-' + key + '-badge');
+    const opened  = document.getElementById('tc-' + key + '-opened');
     const openBtn = document.getElementById('tc-' + key + '-open');
     if (!card) return;
 
     // Card active class
     card.classList.toggle('tc-active', !!(t && (t.openedAt || t.complete)));
 
-    // Badge
+    // Badge — clickable, cycles: not started → active → done → not started
     if (badge) {
       badge.className = 'tc-badge';
-      if (t && t.complete) { badge.textContent = '✓'; badge.classList.add('tb-done'); }
-      else if (t && t.openedAt) { badge.textContent = 'active'; badge.classList.add('tb-wip'); }
-      else { badge.textContent = 'not started'; badge.classList.add('tb-idle'); }
-    }
-
-    // Complete button — show "✓ complete" if done, "mark done" if opened, hidden if not started
-    if (cmpl) {
       if (t && t.complete) {
-        cmpl.textContent = '✓ complete'; cmpl.classList.add('done'); cmpl.style.display = '';
+        badge.textContent = '✓ done'; badge.classList.add('tb-done');
       } else if (t && t.openedAt) {
-        cmpl.textContent = 'mark done'; cmpl.classList.remove('done'); cmpl.style.display = '';
-      } else if (hasCrawl && TOOL_REGISTRY[key] && TOOL_REGISTRY[key].available) {
-        cmpl.textContent = ''; cmpl.classList.remove('done'); cmpl.style.display = 'none';
+        badge.textContent = 'active'; badge.classList.add('tb-wip');
       } else {
-        cmpl.style.display = 'none';
+        badge.textContent = 'not started'; badge.classList.add('tb-idle');
       }
+      badge.style.cursor = 'pointer';
+      badge.title = 'Click to cycle status';
+      badge.onclick = () => cycleToolState(key);
     }
 
     // Opened timestamp
     if (opened) opened.textContent = t && t.openedAt ? 'opened ' + formatDate(t.openedAt) : '';
 
-    // Open button disabled state
+    // Open button — calls loadTool inline
     if (openBtn) {
+      openBtn.onclick = (e) => { e.preventDefault(); openTool(key); };
       if (!hasCrawl) {
         openBtn.classList.add('disabled');
         openBtn.title = 'Run a crawl first';
@@ -2585,25 +2607,34 @@ function copyProjectLink() {
   }).catch(() => alert(link));
 }
 
-async function toggleToolComplete(toolKey) {
+/* Cycle a tool through: not started → active → done → not started */
+async function cycleToolState(toolKey) {
   if (!activeProject) return;
   const t = activeProject.tools[toolKey];
   if (!t) return;
-  t.complete = !t.complete;
-  if (t.complete && !t.openedAt) t.openedAt = new Date().toISOString();
+
+  if (t.complete) {
+    // done → not started
+    t.complete = false;
+    t.openedAt = null;
+  } else if (t.openedAt) {
+    // active → done
+    t.complete = true;
+  } else {
+    // not started → active
+    t.openedAt = new Date().toISOString();
+    t.complete = false;
+  }
+
   activeProject.updatedAt = new Date().toISOString();
   upsertHistoryEntry(activeProject);
   storeProject(activeProject).catch(() => {});
   updateSidebarPills();
-  // Update just the affected card's button and re-render pipeline dots
-  const btn = document.querySelector('[data-tool-complete="' + toolKey + '"]');
-  if (btn) {
-    btn.textContent = t.complete ? '✓ complete' : 'mark done';
-    btn.classList.toggle('done', t.complete);
-  }
-  // Re-render pipeline dots
   renderOverview();
 }
+
+/* Legacy alias — kept in case anything still calls it */
+async function toggleToolComplete(toolKey) { cycleToolState(toolKey); }
 
 function openTool(toolKey) {
   const navBtn = document.getElementById('nav-' + toolKey);
@@ -2799,6 +2830,7 @@ async function startCrawl() {
   excludedCount = 0;
   crawlState = { running: true, paused: false, queue: [startUrl], visited: new Set([startUrl]), results: [], base: origin };
   activeProject.crawl.startedAt = new Date().toISOString();
+  updateSidebarPills();
 
   setEnabled('btn-crawl-start', false);
   show('btn-crawl-stop');
