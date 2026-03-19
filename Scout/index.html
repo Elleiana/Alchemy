@@ -123,7 +123,7 @@
     ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
     textarea::placeholder, input::placeholder { color: var(--text-dimmer); }
 
-    #app { max-width: 1280px; width: 100%; margin: 0 auto; padding: 2rem clamp(1rem, 4vw, 3rem); }
+    #app { width: 100%; margin: 0; padding: 0; }
 
     /* ── header (exact Waypoint pattern) ── */
     header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
@@ -137,7 +137,7 @@
     .nav-tab .nav-emoji { font-size: 1.25rem; line-height: 1; }
     .nav-tab:hover { color: var(--text-title); }
     .nav-tab.active { color: #008080; border-bottom-color: #008080; }
-    .btn-theme { position: fixed; top: 1.25rem; right: 1.5rem; z-index: 100; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 50%; width: 36px; height: 36px; font-size: 1.1rem; cursor: pointer; transition: border-color 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+    .btn-theme { display: none; } /* hidden when embedded in Alchemy — Alchemy owns the theme toggle */
     .btn-theme:hover { border-color: #008080; color: #008080; }
 
     /* ── section cards (exact Waypoint pattern) ── */
@@ -2761,6 +2761,16 @@ function dcSet(id, val, sub, tipText, tipClass) {
     wrap.appendChild(tip);
   }
 }
+
+/* ── Expose functions called from inline HTML onclick attributes ── */
+window.switchPage  = switchPage;
+window.toggleAcc   = toggleAcc;
+window.addFinding  = addFinding;
+window.aiDraft     = aiDraft;
+window.draftAll    = draftAll;
+window.expandAll   = expandAll;
+window.collapseAll = collapseAll;
+window.buildReport = buildReport;
 
 return { init };
 
