@@ -1,0 +1,2762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alchemy // migration toolkit</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a0a0d'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%23008080' stroke-width='1.4' opacity='0.85'/%3E%3Cpolygon points='16,0.8 17.8,7.2 14.2,7.2' fill='%23008080' opacity='0.95'/%3E%3Cpolygon points='29.16,23.6 22.72,21.96 24.52,18.84' fill='%23008080' opacity='0.95'/%3E%3Cpolygon points='2.84,23.6 9.28,21.96 7.48,18.84' fill='%23008080' opacity='0.95'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:            #0a0a0d;
+      --bg-sidebar:    #0d0d11;
+      --bg-card:       #111114;
+      --bg-card-hd:    #0e0e12;
+      --bg-input:      #0d0d10;
+      --border:        #1e1e26;
+      --border-soft:   #191920;
+      --border-inner:  #161620;
+      --text:          #e0ddd8;
+      --text-strong:   #f0ece4;
+      --text-title:    #d0cdc8;
+      --text-muted:    #4a4a56;
+      --text-dim:      #333340;
+      --text-body:     #c0bbb4;
+      --text-help:     #404048;
+      --teal:          #008080;
+      --teal-bright:   #00a0a0;
+      --teal-dim:      rgba(0,128,128,0.1);
+      --teal-glow:     rgba(0,128,128,0.06);
+      --ok:            #5aab72;
+      --ok-bg:         #172a1c;
+      --ok-bd:         #243d28;
+      --warn:          #c8963a;
+      --warn-bg:       #2a1e0e;
+      --warn-bd:       #4a3518;
+      --err:           #c86a5a;
+      --err-bg:        #1e0f0c;
+      --sidebar-w:     240px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      font-family: 'IBM Plex Sans', sans-serif;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #222230; border-radius: 2px; }
+
+    /* light mode */
+    html.light {
+      --bg:           #e8e8e2;
+      --bg-sidebar:   #e2e2da;
+      --bg-card:      #f5f5f0;
+      --bg-card-hd:   #eeeee8;
+      --bg-input:     #e8e8e2;
+      --border:       #c8c8be;
+      --border-soft:  #d0d0c4;
+      --border-inner: #d8d8d0;
+      --text:         #0d0d12;
+      --text-strong:  #020208;
+      --text-title:   #141420;
+      --text-muted:   #666;
+      --text-dim:     #999;
+      --text-body:    #1e1e28;
+      --text-help:    #585858;
+      --ok-bg:        #c8e8d2;
+      --ok-bd:        #7ab888;
+      --warn-bg:      #f0e4c8;
+      --warn-bd:      #d4a855;
+      --err-bg:       #f0dcd8;
+    }
+
+    /* ═══════════════════════════════════════
+       TOP BAR
+    ═══════════════════════════════════════ */
+    .topbar {
+      height: 64px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.75rem 0 0;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+      background: var(--bg);
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      width: var(--sidebar-w);
+      padding: 0 1.5rem;
+      border-right: 1px solid var(--border);
+      height: 100%;
+      gap: 0.65rem;
+      flex-shrink: 0;
+    }
+
+    .suite-mark {
+      width: 34px;
+      height: 34px;
+      flex-shrink: 0;
+      opacity: 0.9;
+    }
+
+    .suite-wordmark { display: flex; flex-direction: column; gap: 0.3rem; }
+
+    .suite-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-strong);
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+
+    .suite-sub {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+
+    .topbar-project {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex: 1;
+      padding-left: 1.75rem;
+    }
+
+    .topbar-project-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.22rem;
+      min-width: 0;
+    }
+
+    .topbar-project-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-strong);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1;
+    }
+
+    .topbar-domain {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1;
+    }
+
+    .topbar-crawl-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.63rem;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      border-radius: 3px;
+      padding: 0.25rem 0.7rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .crawl-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--teal);
+      flex-shrink: 0;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-shrink: 0;
+    }
+
+    .topbar-btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.38rem 0.9rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .topbar-btn:hover { border-color: var(--teal); color: var(--teal); }
+    .topbar-btn.primary { background: var(--teal); border-color: var(--teal); color: #e0ddd8; }
+    .topbar-btn.primary:hover { background: var(--teal-bright); border-color: var(--teal-bright); color: #e0ddd8; }
+
+    .btn-theme {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .btn-theme:hover { border-color: var(--teal); color: var(--teal); }
+
+    /* ═══════════════════════════════════════
+       BODY LAYOUT
+    ═══════════════════════════════════════ */
+    .layout {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ═══════════════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════════════ */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 1.5rem 0 2.5rem;
+    }
+
+    .sidebar-section {
+      padding: 0 0.85rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .sidebar-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 0 0.5rem;
+      margin-bottom: 0.35rem;
+      margin-top: 1.25rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text-body); }
+    .nav-item.active { background: var(--teal-dim); color: var(--teal); }
+    .nav-item.active .nav-item-icon { color: var(--teal); }
+
+    .nav-item-left { display: flex; align-items: center; gap: 0.65rem; }
+    .nav-item-icon { font-size: 0.9rem; line-height: 1; flex-shrink: 0; }
+    .nav-item-name { line-height: 1; }
+    .nav-item-sub  { font-size: 0.62rem; color: var(--text-dim); display: block; margin-top: 0.15rem; font-family: 'IBM Plex Mono', monospace; }
+
+    .nav-status {
+      font-size: 0.59rem;
+      padding: 0.14rem 0.45rem;
+      border-radius: 2px;
+      font-family: 'IBM Plex Mono', monospace;
+      flex-shrink: 0;
+      line-height: 1.4;
+    }
+    .ns-done   { background: var(--ok-bg);   color: var(--ok);   border: 1px solid var(--ok-bd); }
+    .ns-active { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-bd); }
+    .ns-soon   { background: var(--bg-input); color: var(--text-dim); border: 1px solid var(--border-inner); }
+
+    .sidebar-divider {
+      border: none;
+      border-top: 1px solid var(--border-inner);
+      margin: 1.1rem 0.85rem 0;
+    }
+
+    /* ═══════════════════════════════════════
+       MAIN
+    ═══════════════════════════════════════ */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2.25rem 2.5rem 3.5rem;
+      position: relative;
+    }
+
+    /* Subtle radial glow — same as landing page */
+    .main::before {
+      content: '';
+      position: fixed;
+      top: -120px;
+      right: -100px;
+      width: 600px;
+      height: 500px;
+      background: radial-gradient(ellipse at center, rgba(0,128,128,0.05) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .main > * { position: relative; z-index: 1; }
+
+    /* ═══════════════════════════════════════
+       PAGE HEADER (inside main)
+    ═══════════════════════════════════════ */
+    .page-hd {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .page-hd-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-strong);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.2rem;
+    }
+
+    .page-hd-sub {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* ═══════════════════════════════════════
+       SUMMARY ROW (4 headline numbers)
+    ═══════════════════════════════════════ */
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.4rem 1.1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--teal);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .summary-card:hover::before { opacity: 1; }
+
+    .sc-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .sc-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 2.1rem;
+      font-weight: 600;
+      color: var(--text-strong);
+      line-height: 1;
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.03em;
+    }
+
+    .sc-meta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.63rem;
+      color: var(--text-muted);
+    }
+
+    .sc-ok   .sc-value { color: var(--ok); }
+    .sc-warn .sc-value { color: var(--warn); }
+    .sc-err  .sc-value { color: var(--err); }
+    .sc-teal .sc-value { color: var(--teal); }
+
+    /* mini bar inside summary card */
+    .sc-bar-wrap { height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; margin-top: 0.55rem; }
+    .sc-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--teal-bright)); }
+
+    /* ═══════════════════════════════════════
+       SECTION GRID (tool cards)
+    ═══════════════════════════════════════ */
+    .section-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .tool-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tool-card:hover { border-color: #2e2e3c; }
+    .tool-card.tc-active { border-color: rgba(0,128,128,0.35); border-left: 2px solid var(--teal); }
+    .tool-card.tc-active:hover { border-color: rgba(0,128,128,0.5); border-left-color: var(--teal); }
+
+    /* no pseudo-element accent bar needed — border-left handles it */
+    .tool-card::after { display: none; }
+
+    .tc-header {
+      padding: 1rem 1.15rem 0.85rem;
+      background: var(--bg-card-hd);
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .tc-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-title);
+      margin-bottom: 0.15rem;
+    }
+
+    .tc-tagline {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+    }
+
+    .tc-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.58rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 2px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      line-height: 1.5;
+    }
+    .tb-done { background: var(--ok-bg);   color: var(--ok);   border: 1px solid var(--ok-bd); }
+    .tb-wip  { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-bd); }
+    .tb-idle { background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-inner); }
+    .tb-soon { background: var(--bg-input); color: var(--text-dim);   border: 1px solid var(--border-inner); }
+
+    .tc-body { padding: 1rem 1.15rem; flex: 1; display: flex; flex-direction: column; gap: 0.7rem; }
+
+    .tc-stat-row { display: flex; gap: 1.25rem; }
+
+    .tc-stat {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+    }
+    .tc-stat strong {
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-title);
+      line-height: 1.2;
+      margin-bottom: 0.05rem;
+    }
+    .tc-stat.ts-ok strong   { color: var(--ok); }
+    .tc-stat.ts-warn strong { color: var(--warn); }
+    .tc-stat.ts-err strong  { color: var(--err); }
+    .tc-stat.ts-teal strong { color: var(--teal); }
+
+    .tc-bar-wrap { height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .tc-bar-fill { height: 100%; border-radius: 99px; }
+    .tc-bar-ok   .tc-bar-fill { background: var(--ok); }
+    .tc-bar-warn .tc-bar-fill { background: var(--warn); }
+    .tc-bar-teal .tc-bar-fill { background: linear-gradient(90deg, var(--teal), var(--teal-bright)); }
+
+    .tc-finding {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.68rem;
+      color: var(--text-body);
+      line-height: 1.55;
+    }
+
+    .tc-finding-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.55rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-body);
+      padding: 0.3rem 0;
+      border-bottom: 1px solid var(--border-inner);
+    }
+    .tc-finding-row:last-child { border-bottom: none; }
+
+    .tf-bullet {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .tb-ok   { background: var(--ok); }
+    .tb-warn { background: var(--warn); }
+    .tb-err  { background: var(--err); }
+    .tb-dim  { background: var(--text-dim); }
+
+    .tc-empty {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      padding: 0.35rem 0;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .tc-footer {
+      padding: 0.75rem 1.15rem;
+      border-top: 1px solid var(--border-inner);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .tc-opened {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--text-dim);
+    }
+
+    .tc-open-btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--teal);
+      background: none;
+      border: 1px solid rgba(0,128,128,0.3);
+      border-radius: 3px;
+      padding: 0.22rem 0.65rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      text-decoration: none;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .tc-open-btn:hover { background: var(--teal-dim); border-color: var(--teal); }
+
+    .tc-open-btn.disabled {
+      color: var(--text-dim);
+      border-color: var(--border-inner);
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* complete toggle */
+    .tc-complete {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.15rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: var(--text-dim);
+      transition: color 0.15s;
+    }
+    .tc-complete:hover { color: var(--text-muted); }
+    .tc-complete.done { color: var(--ok); }
+
+    /* ═══════════════════════════════════════
+       PIPELINE PROGRESS BAR (horizontal)
+    ═══════════════════════════════════════ */
+    .pipeline {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.75rem;
+      margin-bottom: 1.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .pl-step {
+      display: flex;
+      align-items: center;
+      flex: 1;
+    }
+
+    .pl-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      flex-shrink: 0;
+    }
+
+    .pl-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--bg-input);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      line-height: 1;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .pl-dot.done   { border-color: var(--teal); }
+    .pl-dot.active { border-color: var(--warn); }
+    .pl-dot.soon   { opacity: 0.3; }
+
+    .pl-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.57rem;
+      color: var(--text-muted);
+      text-align: center;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .pl-dot.done   ~ .pl-label { color: var(--teal); opacity: 0.8; }
+    .pl-dot.active ~ .pl-label { color: var(--warn); opacity: 0.8; }
+
+    .pl-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      margin: 0 0.1rem;
+      margin-bottom: 1.1rem; /* align to dot center */
+      position: relative;
+    }
+
+    .pl-line.done::after {
+      content: '';
+      position: absolute;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,128,128,0.35);
+      opacity: 0.5;
+    }
+
+    /* ═══════════════════════════════════════
+       FULL-WIDTH CARD (redirects, etc.)
+    ═══════════════════════════════════════ */
+    .wide-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      overflow: hidden;
+      margin-bottom: 0.75rem;
+    }
+
+    .wc-header {
+      padding: 0.75rem 1rem;
+      background: var(--bg-card-hd);
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .wc-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-title);
+    }
+
+    .wc-body { padding: 0.85rem 1rem; }
+
+    /* redirect preview rows */
+    .redir-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.38rem 0;
+      border-bottom: 1px solid var(--border-inner);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.67rem;
+    }
+    .redir-row:last-child { border-bottom: none; }
+    .redir-old { color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .redir-arrow { color: var(--text-dim); flex-shrink: 0; }
+    .redir-new { color: var(--text-body); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .redir-tag { font-size: 0.58rem; padding: 0.12rem 0.4rem; border-radius: 2px; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; }
+    .rt-ok   { background: var(--ok-bg);   color: var(--ok);  border: 1px solid var(--ok-bd); }
+    .rt-pend { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-bd); }
+
+    /* ═══════════════════════════════════════
+       AUDIT SCORES (Scout preview)
+    ═══════════════════════════════════════ */
+    .score-row {
+      display: flex;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.65rem;
+    }
+
+    .score-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border-inner);
+      border-radius: 5px;
+      padding: 0.5rem 0.7rem;
+      min-width: 60px;
+    }
+    .sp-val {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .sp-lbl {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.55rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .sp-ok   .sp-val { color: var(--ok); }
+    .sp-warn .sp-val { color: var(--warn); }
+    .sp-err  .sp-val { color: var(--err); }
+
+    .tool-icon    { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.85; }
+    .tool-icon-lg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.85; }
+    .pl-dot .tool-icon        { width: 18px; height: 18px; opacity: 1; }
+    .pl-dot.active .tool-icon { opacity: 0.9; filter: sepia(1) saturate(2) hue-rotate(5deg); }
+
+    /* ═══════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════ */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 0.6rem 1.5rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    footer a { color: var(--text-dim); text-decoration: none; }
+    footer a:hover { color: var(--teal); }
+
+    /* ── page switching ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── new project form ── */
+    .new-project-form { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem 1.75rem; margin-bottom: 2rem; }
+    .npf-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.1rem; }
+    .npf-fields { display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.85rem; align-items: flex-end; }
+    .npf-field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .npf-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; }
+    .npf-input { background: var(--bg-input); border: 1px solid var(--border-soft); border-radius: 5px; padding: 0.55rem 0.85rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--text-body); outline: none; transition: border-color 0.15s; width: 100%; }
+    .npf-input:focus { border-color: var(--teal); }
+    .npf-input::placeholder { color: var(--text-dim); }
+    .npf-btn { background: var(--teal); border: none; color: #e0ddd8; border-radius: 5px; padding: 0.55rem 1.25rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.15s; white-space: nowrap; align-self: flex-end; }
+    .npf-btn:hover { background: var(--teal-bright); }
+    .npf-error { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--err); margin-top: 0.6rem; display: none; }
+
+    /* ── project cards ── */
+    .projects-section-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.85rem; }
+    .projects-grid { display: flex; flex-direction: column; gap: 0.65rem; }
+    .project-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.1rem 1.4rem; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; display: grid; grid-template-columns: 1fr auto auto; gap: 1.5rem; align-items: center; position: relative; }
+    .project-card:hover { border-color: rgba(0,128,128,0.4); box-shadow: 0 0 0 1px rgba(0,128,128,0.1); }
+    .project-card.is-active { border-color: rgba(0,128,128,0.4); }
+    .project-card.is-active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--teal); border-radius: 8px 0 0 8px; }
+    .pc-main { min-width: 0; }
+    .pc-top { display: flex; align-items: baseline; gap: 0.85rem; margin-bottom: 0.25rem; flex-wrap: wrap; }
+    .pc-name { font-family: 'IBM Plex Mono', monospace; font-size: 0.88rem; font-weight: 600; color: var(--text-strong); }
+    .pc-domain { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--text-muted); }
+    .pc-meta { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+    .pc-meta-item { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--text-dim); }
+
+    /* mini pipeline strip */
+    .pc-pipeline { display: flex; align-items: flex-start; gap: 0; }
+    .pc-pip-node { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+    .pc-pip-dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--bg-input); flex-shrink: 0; }
+    .pc-pip-dot.done     { background: var(--ok);   border-color: var(--ok-bd); }
+    .pc-pip-dot.p-active { background: var(--warn-bg); border-color: var(--warn); box-shadow: 0 0 0 2px rgba(200,150,58,0.15); }
+    .pc-pip-line { height: 1.5px; width: 18px; background: var(--border-inner); margin-top: 3.75px; flex-shrink: 0; }
+    .pc-pip-line.done { background: rgba(90,171,114,0.35); }
+    .pc-pip-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.52rem; color: var(--text-dim); white-space: nowrap; line-height: 1; }
+
+    /* card right side */
+    .pc-stats { display: flex; gap: 1.75rem; flex-shrink: 0; align-items: center; }
+    .pc-stat { text-align: right; font-family: 'IBM Plex Mono', monospace; }
+    .pc-stat-n { font-size: 1.25rem; font-weight: 600; color: var(--text-title); display: block; line-height: 1; }
+    .pc-stat-l { font-size: 0.58rem; color: var(--text-dim); display: block; margin-top: 0.15rem; }
+    .pc-arrow { font-size: 0.85rem; color: var(--text-dim); transition: color 0.15s, transform 0.15s; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; }
+    .project-card:hover .pc-arrow { color: var(--teal); transform: translateX(2px); }
+
+    /* empty state */
+    .projects-empty { text-align: center; padding: 4rem 2rem; font-family: 'IBM Plex Mono', monospace; color: var(--text-dim); border: 1px dashed var(--border-inner); border-radius: 8px; }
+    .projects-empty-title { font-size: 0.82rem; margin-bottom: 0.4rem; }
+    .projects-empty-sub { font-size: 0.65rem; opacity: 0.55; }
+
+    /* ── hide sidebar pills and topbar project info until a project is loaded ── */
+    .nav-status { display: none; }
+    body.has-project .nav-status { display: inline-block; }
+    body.has-project #topbar-project-ctx { display: flex !important; }
+    #topbar-project-ctx { display: none; }
+    /* ── Crawl tab: section cards, accordion, progress, result rows ── */
+    .section-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 1rem; }
+    .card-header { padding: 0.85rem 1rem 0.7rem; border-bottom: 1px solid var(--border-soft); background: var(--bg-card-hd); display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+    .card-header-text { flex: 1; }
+    .card-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; font-weight: 600; color: var(--text-title); letter-spacing: -0.01em; margin-bottom: 0.2rem; }
+    .card-help  { font-family: 'IBM Plex Sans', sans-serif; font-size: 0.72rem; color: var(--text-help); line-height: 1.5; }
+    .card-body  { padding: 1rem; }
+
+    .card-header.accordion { cursor: pointer; user-select: none; }
+    .card-header.accordion:hover .card-title { color: var(--text-strong); }
+    .accordion-toggle { font-family: 'IBM Plex Mono', monospace; font-size: 1rem; color: var(--text-dim); flex-shrink: 0; transition: transform 0.25s ease, color 0.15s; display: inline-block; }
+    .card-header.accordion.open .accordion-toggle { transform: rotate(-90deg); color: var(--teal); }
+    .accordion-body { overflow: hidden; transition: max-height 0.3s ease, opacity 0.25s ease; max-height: 0; opacity: 0; }
+    .accordion-body.open { max-height: 700px; opacity: 1; }
+    .accordion-help { font-family: 'IBM Plex Sans', sans-serif; font-size: 0.72rem; color: var(--text-help); line-height: 1.5; display: none; }
+    .card-header.accordion.open .accordion-help { display: block; }
+
+    .progress-bar-track { height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--teal-bright)); transition: width 0.3s ease; width: 0%; }
+    .progress-fill.crawling { animation: barPulse 1.5s ease-in-out infinite; width: 100%; }
+    @keyframes barPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .fpill { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; padding: 0.25rem 0.65rem; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; background: none; transition: all 0.15s; }
+    .fpill:first-child { border-radius: 3px 0 0 3px; }
+    .fpill:last-child  { border-radius: 0 3px 3px 0; }
+    .fpill + .fpill { border-left: none; }
+    .fpill:hover { color: var(--text-title); background: var(--bg-input); }
+    .fpill.active { background: var(--bg-input); color: var(--text-title); border-color: var(--border-soft); }
+
+    .spider-row { display: flex; align-items: center; gap: 0.65rem; padding: 0.45rem 0.85rem; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; background: var(--row-bg, var(--bg-card)); border: 1px solid var(--border); }
+    .spider-url   { color: var(--text-body); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .spider-depth { color: var(--text-dim); font-size: 0.62rem; flex-shrink: 0; }
+    .spider-badge { font-size: 0.63rem; padding: 0.18rem 0.5rem; border-radius: 3px; white-space: nowrap; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; }
+    .badge-ok   { color: var(--ok);   border: 1px solid var(--ok-bd);  background: var(--ok-bg); }
+    .badge-err  { color: var(--err);  border: 1px solid #3a1e1a;       background: var(--err-bg, #1e0f0c); }
+    .badge-blk  { color: var(--text-muted); border: 1px solid var(--border); background: var(--bg-input); }
+    .badge-pend { color: var(--text-muted); border: 1px solid var(--border); background: var(--bg-input); animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+  </style>
+</head>
+<body>
+
+  <!-- ══ TOP BAR ══════════════════════════════ -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <svg class="suite-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="16" cy="16" r="10" fill="none" stroke="#008080" stroke-width="1.4" opacity="0.85"/>
+        <circle cx="16" cy="16" r="6.5" fill="none" stroke="#008080" stroke-width="0.8" opacity="0.35"/>
+        <polygon points="16,6 24.66,21 7.34,21" fill="none" stroke="#008080" stroke-width="1" stroke-linejoin="round" opacity="0.5"/>
+        <circle cx="16" cy="16" r="2" fill="#008080"/>
+        <polygon points="16,0.8 17.8,7.2 14.2,7.2" fill="#008080" opacity="0.95"/>
+        <polygon points="29.16,23.6 22.72,21.96 24.52,18.84" fill="#008080" opacity="0.95"/>
+        <polygon points="2.84,23.6 9.28,21.96 7.48,18.84" fill="#008080" opacity="0.95"/>
+      </svg>
+      <div class="suite-wordmark">
+        <span class="suite-name">Alchemy</span>
+        <span class="suite-sub">// migration toolkit</span>
+      </div>
+    </div>
+
+    <div class="topbar-project" id="topbar-project-ctx">
+      <div class="topbar-project-stack">
+        <span class="topbar-project-name">Acme Corp Website Redesign</span>
+        <span class="topbar-domain">www.acmecorp.com</span>
+      </div>
+      <div class="topbar-crawl-badge">
+        <div class="crawl-dot"></div>
+        crawled 18 Mar 2026
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="navigator.clipboard.writeText(location.href)">🔗 Share</button>
+      <button class="topbar-btn primary" onclick="alert('Saved')">↓ Save</button>
+      <button class="btn-theme" id="btn-theme" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
+    </div>
+  </div>
+
+  <!-- ══ BODY ════════════════════════════════ -->
+  <div class="layout">
+
+    <!-- ══ SIDEBAR ══ -->
+    <nav class="sidebar">
+
+      <!-- Projects — top level -->
+      <div class="sidebar-section">
+        <button class="nav-item" onclick="showPage('projects', this)">
+          <div class="nav-item-left">
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="16" cy="16" r="10" fill="none" stroke="#008080" stroke-width="1.4" opacity="0.85"/>
+              <circle cx="16" cy="16" r="6.5" fill="none" stroke="#008080" stroke-width="0.8" opacity="0.35"/>
+              <polygon points="16,6 24.66,21 7.34,21" fill="none" stroke="#008080" stroke-width="1" stroke-linejoin="round" opacity="0.5"/>
+              <circle cx="16" cy="16" r="2" fill="#008080"/>
+              <polygon points="16,0.8 17.8,7.2 14.2,7.2" fill="#008080" opacity="0.95"/>
+              <polygon points="29.16,23.6 22.72,21.96 24.52,18.84" fill="#008080" opacity="0.95"/>
+              <polygon points="2.84,23.6 9.28,21.96 7.48,18.84" fill="#008080" opacity="0.95"/>
+            </svg>
+            <span class="nav-item-name">Projects</span>
+          </div>
+        </button>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- Foundry -->
+      <div class="sidebar-section">
+        <div class="sidebar-label">Foundry</div>
+
+        <button class="nav-item active" onclick="showPage('overview', this)">
+          <div class="nav-item-left">
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="4" y="4" width="10" height="10" rx="1.5" fill="#008080" opacity="0.9"/>
+              <rect x="18" y="4" width="10" height="10" rx="1.5" fill="#008080" opacity="0.55"/>
+              <rect x="4" y="18" width="10" height="10" rx="1.5" fill="#008080" opacity="0.55"/>
+              <rect x="18" y="18" width="10" height="10" rx="1.5" fill="#008080" opacity="0.35"/>
+            </svg>
+            <span class="nav-item-name">Overview</span>
+          </div>
+        </button>
+
+        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+          <div class="nav-item-left">
+            <!-- Crawl — spider/web icon -->
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="16" cy="16" r="4" fill="#008080" opacity="0.9"/>
+              <line x1="16" y1="4"  x2="16" y2="12" stroke="#008080" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+              <line x1="16" y1="20" x2="16" y2="28" stroke="#008080" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+              <line x1="4"  y1="16" x2="12" y2="16" stroke="#008080" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+              <line x1="20" y1="16" x2="28" y2="16" stroke="#008080" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+              <line x1="7.5"  y1="7.5"  x2="13" y2="13" stroke="#008080" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+              <line x1="19"   y1="19"   x2="24.5" y2="24.5" stroke="#008080" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+              <line x1="24.5" y1="7.5"  x2="19" y2="13" stroke="#008080" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+              <line x1="13"   y1="19"   x2="7.5" y2="24.5" stroke="#008080" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+            </svg>
+            <span class="nav-item-name">Crawl</span>
+          </div>
+          <span class="nav-status ns-done">done</span>
+        </button>
+
+        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+          <div class="nav-item-left">
+            <!-- Settings — gear icon -->
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="16" cy="16" r="4" fill="none" stroke="#008080" stroke-width="2" opacity="0.9"/>
+              <circle cx="16" cy="16" r="9" fill="none" stroke="#008080" stroke-width="1.5" stroke-dasharray="3.5 3.5" opacity="0.55"/>
+            </svg>
+            <span class="nav-item-name">Settings</span>
+          </div>
+        </button>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- Pipeline -->
+      <div class="sidebar-section">
+        <div class="sidebar-label">Pipeline</div>
+
+        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+          <div class="nav-item-left">
+            <!-- Scout — crosshair -->
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="16" cy="16" r="11" fill="none" stroke="#008080" stroke-width="2.2" opacity="0.9"/>
+              <circle cx="16" cy="16" r="2.8" fill="#008080"/>
+              <line x1="16" y1="5"  x2="16" y2="11" stroke="#008080" stroke-width="2" stroke-linecap="round"/>
+              <line x1="16" y1="21" x2="16" y2="27" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+              <line x1="5"  y1="16" x2="11" y2="16" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+              <line x1="21" y1="16" x2="27" y2="16" stroke="#008080" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="nav-item-name">Scout</span>
+          </div>
+          <span class="nav-status ns-done">done</span>
+        </button>
+
+        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+          <div class="nav-item-left">
+            <!-- Canopy — double triangle tree -->
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <polygon points="16,3 26,16 6,16" fill="#008080" opacity="0.9"/>
+              <polygon points="16,12 29,28 3,28" fill="#008080" opacity="0.65"/>
+            </svg>
+            <span class="nav-item-name">Canopy</span>
+          </div>
+          <span class="nav-status ns-done">done</span>
+        </button>
+
+        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+          <div class="nav-item-left">
+            <!-- Atlas — location marker: circle + downward triangle -->
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="16" cy="11" r="8" fill="#008080" opacity="0.9"/>
+              <polygon points="16,30 8,16 24,16" fill="#008080" opacity="0.6"/>
+            </svg>
+            <span class="nav-item-name">Atlas</span>
+          </div>
+          <span class="nav-status ns-active">active</span>
+        </button>
+
+        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+          <div class="nav-item-left">
+            <!-- Forge — anvil: wide top face, tapered body, wide base -->
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="3"  y="7"  width="26" height="7" rx="1" fill="#008080" opacity="0.9"/>
+              <rect x="10" y="14" width="12" height="5"  rx="1" fill="#008080" opacity="0.7"/>
+              <rect x="5"  y="19" width="22" height="6"  rx="1" fill="#008080" opacity="0.55"/>
+            </svg>
+            <span class="nav-item-name">Forge</span>
+          </div>
+          <span class="nav-status ns-soon">soon</span>
+        </button>
+
+        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+          <div class="nav-item-left">
+            <!-- Waypoint — four arrows compass -->
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <polygon points="16,2 19,14 16,11 13,14"  fill="#008080" opacity="0.9"/>
+              <polygon points="16,30 19,18 16,21 13,18" fill="#008080" opacity="0.55"/>
+              <polygon points="2,16 14,13 11,16 14,19"  fill="#008080" opacity="0.55"/>
+              <polygon points="30,16 18,13 21,16 18,19" fill="#008080" opacity="0.9"/>
+              <circle cx="16" cy="16" r="2.2" fill="#008080"/>
+            </svg>
+            <span class="nav-item-name">Waypoint</span>
+          </div>
+          <span class="nav-status ns-active">active</span>
+        </button>
+
+        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+          <div class="nav-item-left">
+            <!-- Warden — shield -->
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M16 3 L28 8 L28 17 Q28 24 16 29 Q4 24 4 17 L4 8 Z" fill="none" stroke="#008080" stroke-width="2" stroke-linejoin="round" opacity="0.9"/>
+              <path d="M16 8 L24 11.5 L24 17 Q24 21.5 16 25 Q8 21.5 8 17 L8 11.5 Z" fill="#008080" opacity="0.45"/>
+            </svg>
+            <span class="nav-item-name">Warden</span>
+          </div>
+          <span class="nav-status ns-soon">soon</span>
+        </button>
+
+        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+          <div class="nav-item-left">
+            <!-- Charter — three stepped strokes: sequence, schedule, delivery -->
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <line x1="4"  y1="9"  x2="28" y2="9"  stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+              <line x1="4"  y1="17" x2="20" y2="17" stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.65"/>
+              <line x1="4"  y1="25" x2="13" y2="25" stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+            </svg>
+            <span class="nav-item-name">Charter</span>
+          </div>
+          <span class="nav-status ns-soon">soon</span>
+        </button>
+      </div>
+
+      <hr class="sidebar-divider" />
+
+      <!-- Export -->
+      <div class="sidebar-section">
+        <div class="sidebar-label">Export</div>
+        <button class="nav-item" onclick="this.closest('.sidebar').querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active')">
+          <div class="nav-item-left">
+            <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <line x1="16" y1="4" x2="16" y2="22" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+              <polyline points="9,15 16,22 23,15" fill="none" stroke="#008080" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+              <line x1="5" y1="27" x2="27" y2="27" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+            </svg>
+            <span class="nav-item-name">.alchemy file</span>
+          </div>
+        </button>
+      </div>
+
+    </nav>
+
+    <!-- ══ MAIN ══ -->
+    <main class="main">
+
+      <!-- ══════════════════════════════════════
+           PAGE: PROJECTS
+      ══════════════════════════════════════ -->
+      <div class="page" id="page-projects">
+
+        <div class="page-hd">
+          <div>
+            <div class="page-hd-title">Projects</div>
+            <div class="page-hd-sub">Open an existing project or start a new one.</div>
+          </div>
+        </div>
+
+        <!-- New project form -->
+        <div class="new-project-form">
+          <div class="npf-title">New project</div>
+          <div class="npf-fields">
+            <div class="npf-field">
+              <label class="npf-label" for="npf-name">Project name</label>
+              <input class="npf-input" id="npf-name" type="text" placeholder="e.g. Acme Corp Redesign" maxlength="80" spellcheck="false" />
+            </div>
+            <div class="npf-field">
+              <label class="npf-label" for="npf-url">Site URL</label>
+              <input class="npf-input" id="npf-url" type="url" placeholder="https://www.example.com" />
+            </div>
+            <button class="npf-btn" onclick="createProject()">Create project →</button>
+          </div>
+          <div class="npf-error" id="npf-error"></div>
+        </div>
+
+        <!-- Project list — populated by renderProjectsList() -->
+        <div id="projects-section-wrap">
+          <div class="projects-section-label">Recent projects</div>
+          <div class="projects-grid" id="projects-grid"></div>
+        </div>
+
+        <div id="projects-empty" class="projects-empty" style="display:none;">
+          <div class="projects-empty-title">No projects yet</div>
+          <div class="projects-empty-sub">Create your first one above to get started.</div>
+        </div>
+
+      </div><!-- /page-projects -->
+
+      <!-- ══════════════════════════════════════
+           PAGE: OVERVIEW (existing content)
+      ══════════════════════════════════════ -->
+      <div class="page active" id="page-overview">
+
+      <!-- No project state -->
+      <div id="ov-empty" style="display:none;">
+        <div style="text-align:center;padding:5rem 2rem 3rem;">
+          <div id="ov-greeting" style="font-family:'IBM Plex Mono',monospace;font-size:1.25rem;font-weight:600;color:var(--text-strong);letter-spacing:-0.02em;margin-bottom:0.85rem;"></div>
+          <div id="ov-fact" style="font-family:'IBM Plex Sans',sans-serif;font-size:0.82rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.75;"></div>
+          <button class="npf-btn" onclick="showPage('projects', document.querySelector('.nav-item[onclick*=\'projects\']'))">← Go to Projects</button>
+        </div>
+      </div>
+
+      <div id="ov-content">
+
+      <div class="page-hd">
+        <div>
+          <div class="page-hd-title">Project overview</div>
+          <div class="page-hd-sub" id="ov-subtitle">—</div>
+        </div>
+      </div>
+
+      <!-- Pipeline progress — dots updated by renderOverview() -->
+      <div class="pipeline" id="ov-pipeline">
+        <div class="pl-step">
+          <div class="pl-node">
+            <div class="pl-dot" id="pl-scout">
+              <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="#008080" stroke-width="2.2" opacity="0.9"/><circle cx="16" cy="16" r="2.8" fill="#008080"/><line x1="16" y1="5" x2="16" y2="11" stroke="#008080" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="16" x2="27" y2="16" stroke="#008080" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <div class="pl-label">Scout</div>
+          </div>
+          <div class="pl-line" id="pl-line-scout"></div>
+        </div>
+        <div class="pl-step">
+          <div class="pl-node">
+            <div class="pl-dot" id="pl-canopy">
+              <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="16,3 26,16 6,16" fill="#008080" opacity="0.9"/><polygon points="16,12 29,28 3,28" fill="#008080" opacity="0.65"/></svg>
+            </div>
+            <div class="pl-label">Canopy</div>
+          </div>
+          <div class="pl-line" id="pl-line-canopy"></div>
+        </div>
+        <div class="pl-step">
+          <div class="pl-node">
+            <div class="pl-dot" id="pl-atlas">
+              <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="16" cy="11" r="8" fill="#008080" opacity="0.9"/><polygon points="16,30 8,16 24,16" fill="#008080" opacity="0.6"/></svg>
+            </div>
+            <div class="pl-label">Atlas</div>
+          </div>
+          <div class="pl-line" id="pl-line-atlas"></div>
+        </div>
+        <div class="pl-step">
+          <div class="pl-node">
+            <div class="pl-dot soon" id="pl-forge">
+              <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="7" width="26" height="7" rx="1" fill="#008080" opacity="0.9"/><rect x="10" y="14" width="12" height="5" rx="1" fill="#008080" opacity="0.7"/><rect x="5" y="19" width="22" height="6" rx="1" fill="#008080" opacity="0.55"/></svg>
+            </div>
+            <div class="pl-label">Forge</div>
+          </div>
+          <div class="pl-line" id="pl-line-forge"></div>
+        </div>
+        <div class="pl-step">
+          <div class="pl-node">
+            <div class="pl-dot" id="pl-waypoint">
+              <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="16,2 19,14 16,11 13,14" fill="#008080" opacity="0.9"/><polygon points="30,16 18,13 21,16 18,19" fill="#008080" opacity="0.9"/><polygon points="16,30 19,18 16,21 13,18" fill="#008080" opacity="0.55"/><polygon points="2,16 14,13 11,16 14,19" fill="#008080" opacity="0.55"/><circle cx="16" cy="16" r="2.2" fill="#008080"/></svg>
+            </div>
+            <div class="pl-label">Waypoint</div>
+          </div>
+          <div class="pl-line" id="pl-line-waypoint"></div>
+        </div>
+        <div class="pl-step">
+          <div class="pl-node">
+            <div class="pl-dot soon" id="pl-warden">
+              <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 3 L28 8 L28 17 Q28 24 16 29 Q4 24 4 17 L4 8 Z" fill="none" stroke="#008080" stroke-width="2" stroke-linejoin="round" opacity="0.9"/><path d="M16 8 L24 11.5 L24 17 Q24 21.5 16 25 Q8 21.5 8 17 L8 11.5 Z" fill="#008080" opacity="0.45"/></svg>
+            </div>
+            <div class="pl-label">Warden</div>
+          </div>
+          <div class="pl-line" id="pl-line-warden"></div>
+        </div>
+        <div class="pl-step" style="flex:0;">
+          <div class="pl-node">
+            <div class="pl-dot soon" id="pl-charter">
+              <svg class="tool-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line x1="4" y1="9" x2="28" y2="9" stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.9"/><line x1="4" y1="17" x2="20" y2="17" stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.65"/><line x1="4" y1="25" x2="13" y2="25" stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.4"/></svg>
+            </div>
+            <div class="pl-label">Charter</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary numbers — populated by renderOverview() -->
+      <div class="summary-row" id="ov-summary-row">
+        <div class="summary-card" id="ov-sc-crawl">
+          <div class="sc-label">URLs crawled</div>
+          <div class="sc-value" id="ov-sc-crawl-n">—</div>
+          <div class="sc-meta" id="ov-sc-crawl-meta">No crawl yet</div>
+          <div class="sc-bar-wrap"><div class="sc-bar-fill" id="ov-sc-crawl-bar" style="width:0%;"></div></div>
+        </div>
+        <div class="summary-card" id="ov-sc-scout">
+          <div class="sc-label">Scout</div>
+          <div class="sc-value" id="ov-sc-scout-n">—</div>
+          <div class="sc-meta" id="ov-sc-scout-meta">not opened</div>
+        </div>
+        <div class="summary-card" id="ov-sc-waypoint">
+          <div class="sc-label">Waypoint</div>
+          <div class="sc-value" id="ov-sc-waypoint-n">—</div>
+          <div class="sc-meta" id="ov-sc-waypoint-meta">not opened</div>
+        </div>
+        <div class="summary-card" id="ov-sc-atlas">
+          <div class="sc-label">Atlas</div>
+          <div class="sc-value" id="ov-sc-atlas-n">—</div>
+          <div class="sc-meta" id="ov-sc-atlas-meta">not opened</div>
+        </div>
+      </div>
+
+      <!-- Tool cards — static layout, dynamic state via renderOverview() -->
+      <div class="section-title">Tools</div>
+      <div class="tool-grid">
+
+        <!-- Scout -->
+        <div class="tool-card" id="tc-scout">
+          <div class="tc-header">
+            <div>
+              <div class="tc-name" style="display:flex;align-items:center;gap:0.5rem;">
+                <svg class="tool-icon-lg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="#008080" stroke-width="2.2" opacity="0.9"/><circle cx="16" cy="16" r="2.8" fill="#008080"/><line x1="16" y1="5" x2="16" y2="11" stroke="#008080" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="21" x2="16" y2="27" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.5"/><line x1="5" y1="16" x2="11" y2="16" stroke="#008080" stroke-width="2" stroke-linecap="round" opacity="0.5"/><line x1="21" y1="16" x2="27" y2="16" stroke="#008080" stroke-width="2" stroke-linecap="round"/></svg>
+                Scout
+              </div>
+              <div class="tc-tagline">// website audit</div>
+            </div>
+            <span class="tc-badge" id="tc-scout-badge">—</span>
+          </div>
+          <div class="tc-body">
+            <div class="score-row">
+              <div class="score-pill sp-ok">   <span class="sp-val">74</span><span class="sp-lbl">Perf</span></div>
+              <div class="score-pill sp-ok">   <span class="sp-val">91</span><span class="sp-lbl">A11y</span></div>
+              <div class="score-pill sp-warn">  <span class="sp-val">68</span><span class="sp-lbl">SEO</span></div>
+              <div class="score-pill sp-ok">   <span class="sp-val">83</span><span class="sp-lbl">Best</span></div>
+            </div>
+            <div>
+              <div class="tc-finding-row"><div class="tf-bullet tb-err"></div>Missing X-Frame-Options header</div>
+              <div class="tc-finding-row"><div class="tf-bullet tb-warn"></div>3 images missing alt text</div>
+              <div class="tc-finding-row"><div class="tf-bullet tb-ok"></div>HTTPS enforced · sitemap found</div>
+            </div>
+          </div>
+          <div class="tc-footer">
+            <div>
+              <button class="tc-complete" id="tc-scout-complete" data-tool-complete="scout" onclick="toggleToolComplete('scout')"></button>
+              <div class="tc-opened" id="tc-scout-opened"></div>
+            </div>
+            <a class="tc-open-btn" id="tc-scout-open" href="#" onclick="openTool('scout');return false;">Open Scout →</a>
+          </div>
+        </div>
+
+        <!-- Canopy -->
+        <div class="tool-card" id="tc-canopy">
+          <div class="tc-header">
+            <div>
+              <div class="tc-name" style="display:flex;align-items:center;gap:0.5rem;">
+                <svg class="tool-icon-lg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="16,3 26,16 6,16" fill="#008080" opacity="0.9"/><polygon points="16,12 29,28 3,28" fill="#008080" opacity="0.65"/></svg>
+                Canopy
+              </div>
+              <div class="tc-tagline">// sitemap</div>
+            </div>
+            <span class="tc-badge" id="tc-canopy-badge">—</span>
+          </div>
+          <div class="tc-body">
+            <div class="tc-stat-row">
+              <div class="tc-stat ts-teal"><strong id="ov-canopy-pages">—</strong>pages</div>
+              <div class="tc-stat"><strong id="ov-canopy-sections">—</strong>sections</div>
+              <div class="tc-stat"><strong id="ov-canopy-depth">—</strong>max depth</div>
+            </div>
+            <div class="tc-bar-wrap tc-bar-teal" style="margin-top:0.1rem;">
+              <div class="tc-bar-fill" id="ov-canopy-bar" style="width:0%;"></div>
+            </div>
+            <div id="ov-canopy-findings">
+              <div class="tc-empty">No crawl data yet — open Canopy after running a crawl.</div>
+            </div>
+          </div>
+          <div class="tc-footer">
+            <div>
+              <button class="tc-complete" id="tc-canopy-complete" data-tool-complete="canopy" onclick="toggleToolComplete('canopy')"></button>
+              <div class="tc-opened" id="tc-canopy-opened"></div>
+            </div>
+            <a class="tc-open-btn" id="tc-canopy-open" href="#" onclick="openTool('canopy');return false;">Open Canopy →</a>
+          </div>
+        </div>
+
+        <!-- Waypoint -->
+        <div class="tool-card" id="tc-waypoint">
+          <div class="tc-header">
+            <div>
+              <div class="tc-name" style="display:flex;align-items:center;gap:0.5rem;">
+                <svg class="tool-icon-lg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="16,2 19,14 16,11 13,14" fill="#008080" opacity="0.9"/><polygon points="30,16 18,13 21,16 18,19" fill="#008080" opacity="0.9"/><polygon points="16,30 19,18 16,21 13,18" fill="#008080" opacity="0.55"/><polygon points="2,16 14,13 11,16 14,19" fill="#008080" opacity="0.55"/><circle cx="16" cy="16" r="2.2" fill="#008080"/></svg>
+                Waypoint
+              </div>
+              <div class="tc-tagline">// redirect mapper</div>
+            </div>
+            <span class="tc-badge" id="tc-waypoint-badge">—</span>
+          </div>
+          <div class="tc-body">
+            <div class="tc-empty" id="ov-waypoint-body">Open Waypoint after running a crawl to start mapping redirects.</div>
+          </div>
+          <div class="tc-footer">
+            <div>
+              <button class="tc-complete" id="tc-waypoint-complete" data-tool-complete="waypoint" onclick="toggleToolComplete('waypoint')"></button>
+              <div class="tc-opened" id="tc-waypoint-opened"></div>
+            </div>
+            <a class="tc-open-btn" id="tc-waypoint-open" href="#" onclick="openTool('waypoint');return false;">Open Waypoint →</a>
+          </div>
+        </div>
+
+        <!-- Atlas -->
+        <div class="tool-card" id="tc-atlas">
+          <div class="tc-header">
+            <div>
+              <div class="tc-name" style="display:flex;align-items:center;gap:0.5rem;">
+                <svg class="tool-icon-lg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="16" cy="11" r="8" fill="#008080" opacity="0.9"/><polygon points="16,30 8,16 24,16" fill="#008080" opacity="0.6"/></svg>
+                Atlas
+              </div>
+              <div class="tc-tagline">// content inventory</div>
+            </div>
+            <span class="tc-badge tb-idle">not started</span>
+          </div>
+          <div class="tc-body">
+            <div class="tc-empty">No data yet — open Atlas to start the content inventory.</div>
+          </div>
+          <div class="tc-footer">
+            <a class="tc-open-btn" href="#" target="_blank" rel="noopener">Open Atlas →</a>
+          </div>
+        </div>
+
+        <!-- Forge -->
+        <div class="tool-card" style="opacity:0.55;">
+          <div class="tc-header">
+            <div>
+              <div class="tc-name" style="display:flex;align-items:center;gap:0.5rem;">
+                <svg class="tool-icon-lg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="7" width="26" height="7" rx="1" fill="#008080" opacity="0.9"/><rect x="10" y="14" width="12" height="5" rx="1" fill="#008080" opacity="0.7"/><rect x="5" y="19" width="22" height="6" rx="1" fill="#008080" opacity="0.55"/></svg>
+                Forge
+              </div>
+              <div class="tc-tagline">// IA designer</div>
+            </div>
+            <span class="tc-badge tb-soon">coming soon</span>
+          </div>
+          <div class="tc-body">
+            <div class="tc-empty">Design the new site structure from scratch or import from Canopy.</div>
+          </div>
+          <div class="tc-footer">
+            <span class="tc-opened">In development</span>
+            <span class="tc-open-btn disabled">Open Forge →</span>
+          </div>
+        </div>
+
+        <!-- Warden -->
+        <div class="tool-card" style="opacity:0.55;">
+          <div class="tc-header">
+            <div>
+              <div class="tc-name" style="display:flex;align-items:center;gap:0.5rem;">
+                <svg class="tool-icon-lg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 3 L28 8 L28 17 Q28 24 16 29 Q4 24 4 17 L4 8 Z" fill="none" stroke="#008080" stroke-width="2" stroke-linejoin="round" opacity="0.9"/><path d="M16 8 L24 11.5 L24 17 Q24 21.5 16 25 Q8 21.5 8 17 L8 11.5 Z" fill="#008080" opacity="0.45"/></svg>
+                Warden
+              </div>
+              <div class="tc-tagline">// launch validation</div>
+            </div>
+            <span class="tc-badge tb-soon">coming soon</span>
+          </div>
+          <div class="tc-body">
+            <div class="tc-empty">Pre and post-launch checks. Validates redirects, monitors errors.</div>
+          </div>
+          <div class="tc-footer">
+            <span class="tc-opened">In development</span>
+            <span class="tc-open-btn disabled">Open Warden →</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Charter -->
+      <div class="section-title" style="margin-top:1.5rem;">Final step</div>
+      <div class="tool-grid" style="grid-template-columns: 1fr;">
+        <div class="tool-card" style="opacity:0.55;">
+          <div class="tc-header">
+            <div>
+              <div class="tc-name" style="display:flex;align-items:center;gap:0.5rem;">
+                <svg class="tool-icon-lg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line x1="4" y1="9" x2="28" y2="9" stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.9"/><line x1="4" y1="17" x2="20" y2="17" stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.65"/><line x1="4" y1="25" x2="13" y2="25" stroke="#008080" stroke-width="3" stroke-linecap="round" opacity="0.4"/></svg>
+                Charter
+              </div>
+              <div class="tc-tagline">// roadmap planner</div>
+            </div>
+            <span class="tc-badge tb-soon">coming soon</span>
+          </div>
+          <div class="tc-body">
+            <div class="tc-empty" style="flex-direction:column;align-items:flex-start;gap:0.5rem;">
+              <span>Generates a prioritised, hour-budgeted project roadmap from all tool exports.</span>
+              <span style="font-size:0.63rem;color:var(--text-dim);margin-top:0.25rem;">Receives output from Scout · Canopy · Atlas · Waypoint</span>
+            </div>
+          </div>
+          <div class="tc-footer">
+            <span class="tc-opened">In development</span>
+            <span class="tc-open-btn disabled">Open Charter →</span>
+          </div>
+        </div>
+      </div>
+
+      </div><!-- /ov-content -->
+      </div><!-- /page-overview -->
+
+      <!-- ══════════════════════════════════════
+           PAGE: CRAWL
+      ══════════════════════════════════════ -->
+      <div class="page" id="page-crawl">
+
+        <!-- No project state -->
+        <div id="crawl-no-project" style="text-align:center;padding:4rem 1rem;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:var(--text-dim);margin-bottom:1rem;">Select or create a project first.</div>
+          <button class="npf-btn" onclick="showPage('projects', document.querySelector('[onclick*=\'projects\']'))">← Go to Projects</button>
+        </div>
+
+        <!-- Crawl content -->
+        <div id="crawl-content" style="display:none;">
+
+          <!-- Project pill -->
+          <div style="display:inline-flex;align-items:center;gap:0.6rem;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:0.5rem 1rem;font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:var(--text-body);margin-bottom:1.25rem;">
+            <span style="color:var(--text-title);font-weight:600;" id="crawl-project-name"></span>
+            <span style="color:var(--text-dimmer);">·</span>
+            <span style="color:var(--text-muted);" id="crawl-project-url"></span>
+          </div>
+
+          <!-- Mode toggle -->
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem;">
+            <div>
+              <div class="page-hd-title">Crawl</div>
+              <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.78rem;color:var(--text-muted);" id="crawl-mode-sub">Crawl the site to discover all its internal URLs — then open any tool pre-loaded with the results.</div>
+            </div>
+            <div class="pill-group">
+              <button class="pill active" id="mode-crawl-btn"  onclick="setCrawlerMode('crawl')">🕷️ Crawl</button>
+              <button class="pill"        id="mode-import-btn" onclick="setCrawlerMode('import')">→ Import URLs</button>
+            </div>
+          </div>
+
+          <!-- Crawl settings -->
+          <div class="section-card" id="crawl-mode-card">
+            <div class="card-header">
+              <div class="card-header-text">
+                <div class="card-title">Crawl settings</div>
+                <div class="card-help">A proxy is required to crawl most external sites — automatic uses the shared Alchemy proxy.</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;align-items:flex-end;gap:0.75rem;margin-bottom:0.85rem;flex-wrap:wrap;">
+                <div style="flex:1;min-width:200px;">
+                  <div class="npf-label">Site URL</div>
+                  <div id="crawl-url-display" style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:var(--text-body);background:var(--bg-input);border:1px solid var(--border-inner);border-radius:4px;padding:0.45rem 0.7rem;"></div>
+                </div>
+                <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+                  <button class="npf-btn" id="btn-crawl-start" onclick="startCrawl()">Crawl site</button>
+                  <button class="npf-btn" id="btn-crawl-stop" onclick="stopCrawl()" style="display:none;background:#c86a5a;">Stop</button>
+                  <button class="npf-btn" id="btn-crawl-pause" onclick="togglePause()" style="display:none;background:var(--bg-card);color:var(--text-body);border:1px solid var(--border);">⏸ Pause</button>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-end;gap:0.75rem;flex-wrap:wrap;">
+                <div>
+                  <div class="npf-label">Proxy</div>
+                  <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <div class="pill-group">
+                      <button class="pill active" id="proxy-auto"   onclick="setProxy('auto')">automatic</button>
+                      <button class="pill"         id="proxy-manual" onclick="setProxy('manual')">manual</button>
+                    </div>
+                    <input class="npf-input" id="proxy-manual-url" type="url" placeholder="https://your-worker.workers.dev" style="display:none;width:280px;" />
+                  </div>
+                </div>
+              </div>
+              <!-- Progress -->
+              <div id="crawl-progress-wrap" style="display:none;margin-top:0.85rem;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+                  <span id="crawl-status-text" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--text-muted);"></span>
+                  <span id="snail-emoji" style="font-size:1rem;line-height:1;transform:scaleX(-1);display:inline-block;">🐌</span>
+                </div>
+                <div class="progress-bar-track"><div class="progress-fill" id="crawl-progress-fill"></div></div>
+                <div style="margin-top:0.3rem;">
+                  <span id="crawl-queue-info" style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text-dimmer);"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Import mode -->
+          <div class="section-card" id="import-mode-card" style="display:none;">
+            <div class="card-header">
+              <div class="card-header-text">
+                <div class="card-title">Manual import</div>
+                <div class="card-help">Paste a URL list, or upload a .txt, .csv, or sitemap.xml — build without crawling.</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div style="margin-bottom:0.75rem;">
+                <div class="npf-label" style="margin-bottom:0.3rem;">URLs (one per line, or paste CSV / Sitemap XML)</div>
+                <textarea class="npf-input" id="import-textarea" rows="6" placeholder="https://example.com/&#10;https://example.com/about/&#10;https://example.com/services/" style="font-size:0.7rem;line-height:1.6;resize:vertical;min-height:120px;"></textarea>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                <label class="topbar-btn" style="cursor:pointer;">↑ Upload file<input type="file" id="import-file" accept=".txt,.csv,.xml" hidden onchange="handleImportFile(this)" /></label>
+                <span id="import-file-name" style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--text-muted);"></span>
+                <button class="npf-btn" onclick="runImport()" style="margin-left:auto;">Import URLs →</button>
+              </div>
+              <div id="import-status" style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--text-muted);margin-top:0.5rem;"></div>
+            </div>
+          </div>
+
+          <!-- Workbench accordion -->
+          <div class="section-card">
+            <div class="card-header accordion" id="wb-header" onclick="toggleAccordion('wb-header','wb-body')">
+              <div class="card-header-text">
+                <div class="card-title">Workbench</div>
+                <div class="accordion-help">Advanced crawl options — filter out URLs you don't need before the crawl starts.</div>
+              </div>
+              <span class="accordion-toggle" id="wb-toggle">◀</span>
+            </div>
+            <div class="accordion-body" id="wb-body">
+              <div class="card-body">
+                <div style="margin-bottom:0.85rem;">
+                  <div class="npf-label">Concurrency</div>
+                  <div style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap;">
+                    <input class="npf-input" id="concurrency" type="number" min="1" max="10" value="3" style="width:65px;flex:0 0 auto;" />
+                    <span style="font-family:'IBM Plex Sans',sans-serif;font-size:0.72rem;color:var(--text-help);">How many pages to fetch simultaneously. 3 is a safe default.</span>
+                  </div>
+                </div>
+                <div style="margin-bottom:0.85rem;padding-top:0.65rem;border-top:1px solid var(--border-soft);">
+                  <div class="npf-label">Max crawl depth</div>
+                  <div style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap;">
+                    <input class="npf-input" id="crawl-max-depth" type="number" min="1" max="20" value="6" style="width:65px;flex:0 0 auto;" />
+                    <span style="font-family:'IBM Plex Sans',sans-serif;font-size:0.72rem;color:var(--text-help);">How many levels deep to crawl. Shallow sites rarely go past 4.</span>
+                  </div>
+                </div>
+                <div style="border-top:1px solid var(--border-soft);padding-top:0.85rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+                  <div style="display:flex;flex-direction:column;gap:0.45rem;">
+                    <div class="npf-label">Filters</div>
+                    <label style="display:flex;align-items:flex-start;gap:0.5rem;font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:var(--text-body);cursor:pointer;"><input type="checkbox" id="f-pagination" checked style="accent-color:#008080;margin-top:3px;" /> <span>Pagination <span style="color:var(--text-muted);">?page=, /page/</span></span></label>
+                    <label style="display:flex;align-items:flex-start;gap:0.5rem;font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:var(--text-body);cursor:pointer;"><input type="checkbox" id="f-media"      checked style="accent-color:#008080;margin-top:3px;" /> <span>Media files <span style="color:var(--text-muted);">.png, .jpg, .pdf…</span></span></label>
+                    <label style="display:flex;align-items:flex-start;gap:0.5rem;font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:var(--text-body);cursor:pointer;"><input type="checkbox" id="f-dev"        checked style="accent-color:#008080;margin-top:3px;" /> <span>Dev/CMS paths <span style="color:var(--text-muted);">wp-admin, .css…</span></span></label>
+                    <label style="display:flex;align-items:flex-start;gap:0.5rem;font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:var(--text-body);cursor:pointer;"><input type="checkbox" id="f-query"               style="accent-color:#008080;margin-top:3px;" /> <span>Query strings <span style="color:var(--text-muted);">?utm=, ?ref=…</span></span></label>
+                    <label style="display:flex;align-items:flex-start;gap:0.5rem;font-family:'IBM Plex Mono',monospace;font-size:0.71rem;color:var(--text-body);cursor:pointer;"><input type="checkbox" id="f-hash"       checked style="accent-color:#008080;margin-top:3px;" /> <span>Hash anchors <span style="color:var(--text-muted);">#section</span></span></label>
+                  </div>
+                  <div>
+                    <div class="npf-label" style="margin-bottom:0.35rem;">Custom exclusion patterns</div>
+                    <textarea class="npf-input" id="custom-patterns" rows="5" placeholder="One pattern per line&#10;e.g. /tag/&#10;/archive/" style="resize:vertical;font-size:0.68rem;line-height:1.6;"></textarea>
+                    <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.68rem;color:var(--text-help);margin-top:0.3rem;">Any URL containing this string will be excluded.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Results -->
+          <div class="section-card" id="crawler-results" style="display:none;">
+            <div class="card-header">
+              <div class="card-header-text"><div class="card-title">Results</div></div>
+              <div style="display:flex;gap:1.25rem;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--text-stat);"><strong id="stat-total" style="font-size:1.1rem;font-weight:600;margin-right:0.3rem;">0</strong>found</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--ok);"><strong id="stat-ok" style="font-size:1.1rem;font-weight:600;margin-right:0.3rem;">0</strong>ok</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#c86a5a;"><strong id="stat-err" style="font-size:1.1rem;font-weight:600;margin-right:0.3rem;">0</strong>errors</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--text-stat);"><strong id="stat-blk" style="font-size:1.1rem;font-weight:600;margin-right:0.3rem;">0</strong>blocked</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--text-stat);display:none;" id="stat-excl-wrap"><strong id="stat-excl" style="font-size:1.1rem;font-weight:600;margin-right:0.3rem;">0</strong>excluded</span>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0.5rem 0.85rem;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.65rem;flex-wrap:wrap;gap:0.5rem;">
+                <div style="display:flex;gap:0;">
+                  <button class="fpill active" onclick="setResultFilter('all',this)">All</button>
+                  <button class="fpill" onclick="setResultFilter('ok',this)">OK</button>
+                  <button class="fpill" onclick="setResultFilter('errors',this)">Errors</button>
+                  <button class="fpill" onclick="setResultFilter('blocked',this)">Blocked</button>
+                </div>
+                <div style="display:flex;gap:0.4rem;align-items:center;">
+                  <input class="npf-input" id="result-search" type="text" placeholder="Filter URLs…" style="width:200px;font-size:0.68rem;padding:0.25rem 0.5rem;" oninput="renderResults()" />
+                  <button class="topbar-btn" id="search-clear" onclick="clearSearch()" style="display:none;padding:0.25rem 0.5rem;">✕</button>
+                </div>
+              </div>
+              <div id="result-rows" style="display:flex;flex-direction:column;gap:4px;max-height:380px;overflow-y:auto;"></div>
+            </div>
+            <div style="padding:0.65rem 1rem;border-top:1px solid var(--border-inner);display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+              <button class="npf-btn" id="btn-save-crawl" onclick="saveCrawlToProject()" disabled>↓ Save to project</button>
+              <button class="topbar-btn" id="btn-copy-urls" onclick="copyURLs()" style="opacity:0.4;pointer-events:none;" disabled>⧉ Copy URLs</button>
+              <span id="save-crawl-msg" style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--text-muted);"></span>
+            </div>
+          </div>
+
+        </div><!-- /crawl-content -->
+      </div><!-- /page-crawl -->
+
+    </main>
+  </div>
+
+  <footer>
+    <span>🐯 &nbsp;// &nbsp;v0.1.0 &nbsp;// &nbsp;Alchemy &nbsp;// &nbsp;<a href="#">✦ suite</a></span>
+    <span>what you have. what it becomes.</span>
+  </footer>
+
+<script>
+/* ═══════════════════════════════════════════
+   Constants
+═══════════════════════════════════════════ */
+const FOUNDRY_STORE = 'https://foundrystore.libertyhphillips.workers.dev';
+const FOUNDRY_PROXY = 'https://waypointspider.libertyhphillips.workers.dev';
+const HISTORY_KEY   = 'foundry_history_v1';
+
+/* ═══════════════════════════════════════════
+   State
+═══════════════════════════════════════════ */
+let isDark        = true;
+let activeProject = null;
+let crawlState    = { running: false, paused: false, queue: [], visited: new Set(), results: [], base: '' };
+let excludedCount = 0;
+let resultFilter  = 'all';
+let resultSearch  = '';
+const rowMap      = new WeakMap();
+
+/* ═══════════════════════════════════════════
+   Theme
+═══════════════════════════════════════════ */
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.classList.toggle('light', !isDark);
+  document.getElementById('btn-theme').textContent = isDark ? '🌙' : '☀️';
+}
+
+/* ═══════════════════════════════════════════
+   Navigation
+═══════════════════════════════════════════ */
+function showPage(name, navBtn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navBtn) navBtn.classList.add('active');
+
+  if (name === 'projects') renderProjectsList();
+  if (name === 'overview') renderOverview();
+  if (name === 'crawl')    renderCrawlPage();
+}
+
+function setProjectActive(project) {
+  activeProject = project;
+  document.body.classList.toggle('has-project', !!project);
+}
+
+/* ═══════════════════════════════════════════
+   localStorage — project index
+═══════════════════════════════════════════ */
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+}
+function saveHistory(arr) { localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); }
+
+function upsertHistoryEntry(project) {
+  const arr = getHistory();
+  const idx = arr.findIndex(e => e.id === project.id);
+  const entry = {
+    id:        project.id,
+    name:      project.name,
+    url:       project.url,
+    createdAt: project.createdAt,
+    totalUrls: (project.crawl && project.crawl.totalUrls) || 0,
+    okUrls:    (project.crawl && project.crawl.okUrls)    || 0,
+    tools:     project.tools,
+  };
+  if (idx >= 0) arr[idx] = entry; else arr.unshift(entry);
+  saveHistory(arr);
+}
+
+function removeHistoryEntry(id) { saveHistory(getHistory().filter(e => e.id !== id)); }
+
+/* ═══════════════════════════════════════════
+   foundrystore — KV Worker
+═══════════════════════════════════════════ */
+async function storeProject(project) {
+  const res = await fetch(FOUNDRY_STORE + '/store', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ project }),
+  });
+  if (!res.ok) throw new Error('Store failed: ' + res.status);
+  return await res.json();
+}
+
+async function fetchProject(id) {
+  const res = await fetch(FOUNDRY_STORE + '/get?id=' + encodeURIComponent(id));
+  if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+  return (await res.json()).project;
+}
+
+/* ═══════════════════════════════════════════
+   Project factory
+═══════════════════════════════════════════ */
+function makeProjectId() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let id = 'fx_';
+  for (let i = 0; i < 8; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+function makeProject(name, url) {
+  return {
+    id: makeProjectId(), name: name.trim(), url: normaliseUrl(url),
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    crawl: {
+      status: 'idle', startedAt: null, completedAt: null,
+      settings: { concurrency: 3, maxDepth: 6, filters: { pagination: true, media: true, dev: true, query: false, hash: true, customPatterns: [] } },
+      totalUrls: 0, okUrls: 0, results: [],
+    },
+    tools: {
+      scout:    { openedAt: null, complete: false },
+      canopy:   { openedAt: null, complete: false },
+      waypoint: { openedAt: null, complete: false },
+      atlas:    { openedAt: null, complete: false },
+      forge:    { openedAt: null, complete: false },
+      warden:   { openedAt: null, complete: false },
+      charter:  { openedAt: null, complete: false },
+    },
+  };
+}
+
+function normaliseUrl(raw) {
+  let s = raw.trim();
+  if (!s.startsWith('http')) s = 'https://' + s;
+  try { const u = new URL(s); return u.origin + (u.pathname === '/' ? '/' : u.pathname.replace(/\/$/, '')); }
+  catch { return s; }
+}
+
+/* ═══════════════════════════════════════════
+   Create project
+═══════════════════════════════════════════ */
+async function createProject() {
+  const nameEl = document.getElementById('npf-name');
+  const urlEl  = document.getElementById('npf-url');
+  const errEl  = document.getElementById('npf-error');
+  const btn    = document.querySelector('.npf-btn[onclick="createProject()"]');
+
+  const name = nameEl.value.trim();
+  const url  = urlEl.value.trim();
+  errEl.style.display = 'none';
+
+  if (!name) { showNpError('Give the project a name.'); return; }
+  if (!url)  { showNpError('Enter a site URL.'); return; }
+  try { new URL(url.startsWith('http') ? url : 'https://' + url); }
+  catch { showNpError("That URL doesn't look valid."); return; }
+
+  btn.disabled = true; btn.textContent = 'Creating…';
+
+  const project = makeProject(name, url);
+
+  // Always save locally first — Worker is best-effort
+  upsertHistoryEntry(project);
+  setProjectActive(project);
+  nameEl.value = ''; urlEl.value = '';
+  btn.disabled = false; btn.textContent = 'Create project →';
+  const overviewBtn = document.querySelector('.nav-item[onclick*="overview"]');
+  showPage('overview', overviewBtn);
+
+  // Attempt to persist to Worker in background (non-blocking)
+  storeProject(project).then(({ id }) => {
+    if (id && id !== project.id) {
+      project.id = id;
+      upsertHistoryEntry(project);
+    }
+  }).catch(() => {
+    // Worker not yet deployed — local-only is fine for now
+  });
+}
+
+function showNpError(msg) {
+  const el = document.getElementById('npf-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+/* ═══════════════════════════════════════════
+   Projects page
+═══════════════════════════════════════════ */
+const PIPELINE_TOOLS = ['scout','canopy','atlas','forge','waypoint','warden','charter'];
+
+function renderProjectsList() {
+  const history = getHistory();
+  const grid    = document.getElementById('projects-grid');
+  const wrap    = document.getElementById('projects-section-wrap');
+  const empty   = document.getElementById('projects-empty');
+  grid.innerHTML = '';
+
+  if (!history.length) {
+    wrap.style.display  = 'none';
+    empty.style.display = '';
+    return;
+  }
+
+  wrap.style.display  = '';
+  empty.style.display = 'none';
+
+  history.forEach(entry => {
+    let domain = entry.url;
+    try { domain = new URL(entry.url).hostname; } catch {}
+
+    const completedCount = entry.tools
+      ? Object.values(entry.tools).filter(t => t && t.complete).length : 0;
+    const liveToolCount = 3; // scout, canopy, waypoint
+
+    // Build mini pipeline dots
+    const pipHTML = PIPELINE_TOOLS.map((key, i) => {
+      const t = entry.tools && entry.tools[key];
+      const isComplete = t && t.complete;
+      const isOpened   = t && t.openedAt && !isComplete;
+      const dotClass   = isComplete ? 'pc-pip-dot done' : (isOpened ? 'pc-pip-dot p-active' : 'pc-pip-dot');
+      const lineClass  = isComplete && i < PIPELINE_TOOLS.length - 1 ? 'pc-pip-line done' : 'pc-pip-line';
+      const line       = i < PIPELINE_TOOLS.length - 1 ? `<div class="${lineClass}"></div>` : '';
+      const label      = key.charAt(0).toUpperCase() + key.slice(1);
+      return `<div class="pc-pip-node"><div class="${dotClass}"></div><div class="pc-pip-label">${label}</div></div>${line}`;
+    }).join('');
+
+    const crawlDate = entry.createdAt ? formatDate(entry.createdAt) : '—';
+
+    const card = document.createElement('div');
+    card.className = 'project-card' + (activeProject && activeProject.id === entry.id ? ' is-active' : '');
+    card.innerHTML = `
+      <div class="pc-main">
+        <div class="pc-top">
+          <span class="pc-name">${esc(entry.name)}</span>
+          <span class="pc-domain">${esc(domain)}</span>
+        </div>
+        <div class="pc-meta">
+          <span class="pc-meta-item">created ${crawlDate}</span>
+          ${entry.totalUrls ? `<span class="pc-meta-item">·</span><span class="pc-meta-item">crawled ${crawlDate}</span>` : ''}
+        </div>
+        <div class="pc-pipeline">${pipHTML}</div>
+      </div>
+      <div class="pc-stats">
+        ${entry.totalUrls
+          ? `<div class="pc-stat"><span class="pc-stat-n" style="color:var(--teal);">${entry.totalUrls.toLocaleString()}</span><span class="pc-stat-l">URLs</span></div>`
+          : `<div class="pc-stat"><span class="pc-stat-n" style="color:var(--text-dim);">—</span><span class="pc-stat-l">no crawl</span></div>`}
+        <div class="pc-stat">
+          <span class="pc-stat-n" style="color:${completedCount > 0 ? 'var(--ok)' : 'var(--text-dim)'};">${completedCount > 0 ? completedCount + ' / ' + liveToolCount : '—'}</span>
+          <span class="pc-stat-l">done</span>
+        </div>
+      </div>
+      <div class="pc-arrow">→</div>`;
+    card.addEventListener('click', () => loadProject(entry.id));
+    grid.appendChild(card);
+  });
+}
+
+async function loadProject(id) {
+  // Try local cache first for instant load
+  const cached = getHistory().find(e => e.id === id);
+  if (cached) {
+    setProjectActive(cached);
+    const overviewBtn = document.querySelector('.nav-item[onclick*="overview"]');
+    showPage('overview', overviewBtn);
+  }
+  // Then try to fetch full project from Worker (hydrates crawl results etc.)
+  storeProject && fetchProject(id).then(project => {
+    if (project) {
+      setProjectActive(project);
+      upsertHistoryEntry(project);
+      // Re-render if we're still on overview
+      if (document.getElementById('page-overview').classList.contains('active')) renderOverview();
+    }
+  }).catch(() => {
+    // Worker not deployed yet — local cache is fine
+  });
+}
+
+function deleteProject(id) {
+  removeHistoryEntry(id);
+  if (activeProject && activeProject.id === id) setProjectActive(null);
+  renderProjectsList();
+}
+
+/* ═══════════════════════════════════════════
+   Overview page — full render
+═══════════════════════════════════════════ */
+function renderOverview() {
+  const empty   = document.getElementById('ov-empty');
+  const content = document.getElementById('ov-content');
+
+  if (!activeProject) {
+    empty.style.display   = '';
+    content.style.display = 'none';
+    renderEmptyState();
+    return;
+  }
+
+  empty.style.display   = 'none';
+  content.style.display = '';
+
+  const p     = activeProject;
+  const crawl = p.crawl;
+  const tools = p.tools;
+  let domain = p.url;
+  try { domain = new URL(p.url).hostname; } catch {}
+
+  /* ── Topbar ── */
+  updateTopbar();
+
+  /* ── Subtitle ── */
+  const crawlInfo = crawl && crawl.totalUrls
+    ? crawl.totalUrls.toLocaleString() + ' URLs · crawled ' + formatDate(crawl.completedAt)
+    : 'no crawl yet';
+  setText('ov-subtitle', p.name + ' · ' + domain + ' · ' + crawlInfo);
+
+  /* ── Pipeline dots ── */
+  const LIVE_TOOLS = ['scout','canopy','waypoint']; // tools that exist
+  ['scout','canopy','atlas','waypoint'].forEach(key => {
+    const dot  = document.getElementById('pl-' + key);
+    const line = document.getElementById('pl-line-' + key);
+    if (!dot) return;
+    const t = tools[key];
+    // Reset classes
+    dot.className = 'pl-dot';
+    if (line) line.className = 'pl-line';
+    if (t && t.complete) {
+      dot.classList.add('done');
+      if (line) line.classList.add('done');
+    } else if (t && t.openedAt) {
+      dot.classList.add('active');
+    } else if (crawl && crawl.results && crawl.results.length) {
+      // crawl done but tool not opened yet — neutral, not soon
+    } else {
+      dot.classList.add('soon');
+    }
+  });
+
+  /* ── Summary cards ── */
+  if (crawl && crawl.totalUrls) {
+    const pct = Math.round((crawl.okUrls / crawl.totalUrls) * 100);
+    const err = crawl.totalUrls - crawl.okUrls;
+    setText('ov-sc-crawl-n', crawl.totalUrls.toLocaleString());
+    setText('ov-sc-crawl-meta', crawl.okUrls.toLocaleString() + ' ok' + (err ? ' · ' + err + ' errors' : ''));
+    document.getElementById('ov-sc-crawl-bar').style.width = pct + '%';
+  } else {
+    setText('ov-sc-crawl-n', '—');
+    setText('ov-sc-crawl-meta', 'No crawl yet');
+    document.getElementById('ov-sc-crawl-bar').style.width = '0%';
+  }
+
+  // Scout summary
+  const scout = tools.scout;
+  setText('ov-sc-scout-n', scout && scout.complete ? '✓' : scout && scout.openedAt ? '→' : '—');
+  setText('ov-sc-scout-meta', scout && scout.openedAt ? 'opened ' + formatDate(scout.openedAt) : 'not opened');
+
+  // Waypoint summary
+  const wp = tools.waypoint;
+  setText('ov-sc-waypoint-n', wp && wp.complete ? '✓' : wp && wp.openedAt ? '→' : '—');
+  setText('ov-sc-waypoint-meta', wp && wp.openedAt ? 'opened ' + formatDate(wp.openedAt) : 'not opened');
+
+  // Atlas summary
+  const atlas = tools.atlas;
+  setText('ov-sc-atlas-n', atlas && atlas.complete ? '✓' : atlas && atlas.openedAt ? '→' : '—');
+  setText('ov-sc-atlas-meta', atlas && atlas.openedAt ? 'opened ' + formatDate(atlas.openedAt) : 'not opened');
+
+  /* ── Tool cards: badge, complete btn, opened, open btn disabled state ── */
+  const hasCrawl = crawl && crawl.results && crawl.results.length > 0;
+
+  ['scout','canopy','waypoint'].forEach(key => {
+    const t      = tools[key];
+    const card   = document.getElementById('tc-' + key);
+    const badge  = document.getElementById('tc-' + key + '-badge');
+    const cmpl   = document.getElementById('tc-' + key + '-complete');
+    const opened = document.getElementById('tc-' + key + '-opened');
+    const openBtn = document.getElementById('tc-' + key + '-open');
+    if (!card) return;
+
+    // Card active class
+    card.classList.toggle('tc-active', !!(t && (t.openedAt || t.complete)));
+
+    // Badge
+    if (badge) {
+      badge.className = 'tc-badge';
+      if (t && t.complete) { badge.textContent = '✓'; badge.classList.add('tb-done'); }
+      else if (t && t.openedAt) { badge.textContent = 'active'; badge.classList.add('tb-wip'); }
+      else { badge.textContent = 'not started'; badge.classList.add('tb-idle'); }
+    }
+
+    // Complete button
+    if (cmpl) {
+      if (t && t.complete) {
+        cmpl.textContent = '✓ complete'; cmpl.classList.add('done'); cmpl.style.display = '';
+      } else if (t && t.openedAt) {
+        cmpl.textContent = ''; cmpl.classList.remove('done'); cmpl.style.display = 'none';
+      } else {
+        cmpl.style.display = 'none';
+      }
+    }
+
+    // Opened timestamp
+    if (opened) opened.textContent = t && t.openedAt ? 'opened ' + formatDate(t.openedAt) : '';
+
+    // Open button disabled state
+    if (openBtn) {
+      if (!hasCrawl) {
+        openBtn.classList.add('disabled');
+        openBtn.title = 'Run a crawl first';
+      } else {
+        openBtn.classList.remove('disabled');
+        openBtn.title = '';
+      }
+    }
+  });
+
+  /* ── Canopy crawl stats (from project crawl data) ── */
+  if (hasCrawl) {
+    setText('ov-canopy-pages',    crawl.totalUrls.toLocaleString());
+    // sections and depth are derived at diagram-build time, so show what we have
+    const sections = [...new Set(crawl.results.map(r => r.section))].length;
+    const maxDepth = Math.max(...crawl.results.map(r => r.depth || 0));
+    setText('ov-canopy-sections', sections);
+    setText('ov-canopy-depth',    maxDepth);
+    const pct = crawl.okUrls && crawl.totalUrls ? Math.round((crawl.okUrls / crawl.totalUrls) * 100) : 0;
+    document.getElementById('ov-canopy-bar').style.width = pct + '%';
+    const findingsEl = document.getElementById('ov-canopy-findings');
+    if (findingsEl) {
+      const errCount = crawl.totalUrls - crawl.okUrls;
+      findingsEl.innerHTML =
+        '<div class="tc-finding-row"><div class="tf-bullet" style="background:var(--teal);width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:1px;"></div>' + crawl.totalUrls.toLocaleString() + ' URLs in structure</div>' +
+        (errCount > 0 ? '<div class="tc-finding-row"><div class="tf-bullet tb-warn"></div>' + errCount + ' error URLs</div>' : '') +
+        '<div class="tc-finding-row"><div class="tf-bullet tb-ok"></div>' + sections + ' sections · max depth ' + maxDepth + '</div>';
+    }
+  }
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+/* ═══════════════════════════════════════════
+   Overview page — topbar update
+═══════════════════════════════════════════ */
+function updateTopbar() {
+  if (!activeProject) return;
+  const nameEl = document.querySelector('.topbar-project-name');
+  const domEl  = document.querySelector('.topbar-domain');
+  const badgeEl = document.querySelector('.topbar-crawl-badge');
+  if (nameEl) nameEl.textContent = activeProject.name;
+  if (domEl) {
+    let domain = activeProject.url;
+    try { domain = new URL(activeProject.url).hostname; } catch {}
+    domEl.textContent = domain;
+  }
+  if (badgeEl && activeProject.crawl && activeProject.crawl.completedAt) {
+    badgeEl.innerHTML = '<div class="crawl-dot"></div> crawled ' + formatDate(activeProject.crawl.completedAt);
+    badgeEl.style.display = '';
+  }
+}
+
+function copyProjectLink() {
+  if (!activeProject) return;
+  const link = 'https://elleiana.github.io/Alchemy/#p=' + activeProject.id;
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = document.getElementById('topbar-share-btn');
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => { btn.textContent = '🔗 Share'; }, 2000); }
+  }).catch(() => alert(link));
+}
+
+async function toggleToolComplete(toolKey) {
+  if (!activeProject) return;
+  const t = activeProject.tools[toolKey];
+  if (!t) return;
+  t.complete = !t.complete;
+  activeProject.updatedAt = new Date().toISOString();
+  upsertHistoryEntry(activeProject);
+  storeProject(activeProject).catch(() => {});
+  // Update just the affected card's button rather than a full re-render
+  const btn = document.querySelector('[data-tool-complete="' + toolKey + '"]');
+  if (btn) {
+    btn.textContent = t.complete ? '✓ complete' : '';
+    btn.classList.toggle('done', t.complete);
+  }
+}
+
+function openTool(toolKey) {
+  if (!activeProject) return;
+  const URLS = {
+    scout:    'https://elleiana.github.io/Scout/',
+    canopy:   'https://elleiana.github.io/Canopy/',
+    waypoint: 'https://elleiana.github.io/Waypoint/',
+  };
+  const url = URLS[toolKey]; if (!url) return;
+  const t = activeProject.tools[toolKey];
+  if (t && !t.openedAt) {
+    t.openedAt = new Date().toISOString();
+    activeProject.updatedAt = new Date().toISOString();
+    storeProject(activeProject).catch(() => {});
+    upsertHistoryEntry(activeProject);
+  }
+  window.open(url + '?project=' + activeProject.id, '_blank', 'noopener');
+}
+
+/* ═══════════════════════════════════════════
+   Crawl page
+═══════════════════════════════════════════ */
+function renderCrawlPage() {
+  const noProj  = document.getElementById('crawl-no-project');
+  const content = document.getElementById('crawl-content');
+  if (!activeProject) {
+    noProj.style.display  = '';
+    content.style.display = 'none';
+    return;
+  }
+  noProj.style.display  = 'none';
+  content.style.display = '';
+  document.getElementById('crawl-project-name').textContent = activeProject.name;
+  let domain = activeProject.url;
+  try { domain = new URL(activeProject.url).hostname; } catch {}
+  document.getElementById('crawl-project-url').textContent = domain;
+  document.getElementById('crawl-url-display').textContent = activeProject.url;
+
+  // Open workbench accordion by default on first render
+  const wbHeader = document.getElementById('wb-header');
+  const wbBody   = document.getElementById('wb-body');
+  if (wbHeader && !wbHeader.classList.contains('open')) {
+    wbHeader.classList.add('open');
+    wbBody.classList.add('open');
+  }
+}
+
+function setCrawlerMode(mode) {
+  const isCrawl = mode === 'crawl';
+  const crawlCard  = document.getElementById('crawl-mode-card');
+  const importCard = document.getElementById('import-mode-card');
+  crawlCard.style.display  = isCrawl ? '' : 'none';
+  importCard.style.display = isCrawl ? 'none' : '';
+  document.getElementById('mode-crawl-btn').classList.toggle('active', isCrawl);
+  document.getElementById('mode-import-btn').classList.toggle('active', !isCrawl);
+  document.getElementById('crawl-mode-sub').textContent = isCrawl
+    ? 'Crawl the site to discover all its internal URLs — then open any tool pre-loaded with the results.'
+    : 'Import a URL list from a file or paste — build without crawling.';
+}
+
+/* ═══════════════════════════════════════════
+   Import engine
+═══════════════════════════════════════════ */
+function handleImportFile(input) {
+  const file = input.files[0]; if (!file) return;
+  document.getElementById('import-file-name').textContent = file.name;
+  const r = new FileReader();
+  r.onload = e => { document.getElementById('import-textarea').value = e.target.result; };
+  r.readAsText(file);
+}
+
+function parseImportText(raw, baseUrl) {
+  const urls = new Set();
+  const text  = raw.trim();
+  if (text.startsWith('<') || text.includes('<urlset') || text.includes('<loc>')) {
+    try {
+      const doc = new DOMParser().parseFromString(text, 'application/xml');
+      doc.querySelectorAll('loc').forEach(loc => { const u = loc.textContent.trim(); if (u) urls.add(u); });
+      if (urls.size > 0) return [...urls];
+    } catch {}
+  }
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  for (const line of lines) {
+    if (line.toLowerCase().startsWith('url') && !line.startsWith('http')) continue;
+    const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
+    const urlCol = cols.find(c => c.startsWith('http'));
+    if (urlCol) { urls.add(urlCol); continue; }
+    if (line.startsWith('http')) { urls.add(line); continue; }
+    if (baseUrl && line.startsWith('/')) { try { urls.add(new URL(line, baseUrl).href); } catch {} }
+  }
+  return [...urls];
+}
+
+function runImport() {
+  const raw    = document.getElementById('import-textarea').value.trim();
+  const status = document.getElementById('import-status');
+  if (!raw) { status.textContent = '⚠ Paste some URLs or upload a file first.'; return; }
+  const baseUrl = activeProject ? activeProject.url : '';
+  const urls = parseImportText(raw, baseUrl);
+  if (!urls.length) { status.textContent = '⚠ No valid URLs found.'; return; }
+  excludedCount = 0;
+  crawlState.results = urls.map(url => {
+    let depth = 0, section = '/';
+    try { const u = new URL(url); const parts = u.pathname.split('/').filter(Boolean); depth = parts.length; section = parts.length ? '/' + parts[0] : '/'; } catch {}
+    return { url, ok: true, status: 200, statusText: 'imported', depth, section };
+  });
+  showResults();
+  updateStats();
+  renderResults();
+  setEnabled('btn-save-crawl', true);
+  setEnabled('btn-copy-urls', true);
+  status.textContent = '✓ ' + urls.length + ' URL' + (urls.length !== 1 ? 's' : '') + ' imported';
+}
+
+/* ═══════════════════════════════════════════
+   Proxy
+═══════════════════════════════════════════ */
+function setProxy(mode) {
+  document.getElementById('proxy-auto').classList.toggle('active', mode === 'auto');
+  document.getElementById('proxy-manual').classList.toggle('active', mode === 'manual');
+  document.getElementById('proxy-manual-url').style.display = mode === 'manual' ? '' : 'none';
+}
+
+function getProxyUrl() {
+  const isManual = document.getElementById('proxy-manual').classList.contains('active');
+  if (isManual) return document.getElementById('proxy-manual-url').value.trim().replace(/\/$/, '') || FOUNDRY_PROXY;
+  return FOUNDRY_PROXY;
+}
+
+async function fetchPage(url) {
+  const proxyBase = getProxyUrl();
+  try {
+    const res  = await fetch(proxyBase + '?url=' + encodeURIComponent(url));
+    if (!res.ok) return { ok: false, status: res.status, statusText: String(res.status), html: '' };
+    const data = await res.json();
+    return { ok: data.ok, status: data.status, statusText: String(data.status), html: data.html || '' };
+  } catch {
+    try {
+      const res  = await fetch(url, { method: 'GET', credentials: 'omit', headers: { Accept: 'text/html' } });
+      const text = (res.headers.get('content-type') || '').includes('text/html') ? await res.text() : '';
+      return { ok: res.ok, status: res.status, statusText: String(res.status), html: text };
+    } catch { return { ok: null, status: null, statusText: 'blocked', html: '' }; }
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Crawl filters
+═══════════════════════════════════════════ */
+function getFilters() {
+  return {
+    pagination: document.getElementById('f-pagination').checked,
+    media:      document.getElementById('f-media').checked,
+    dev:        document.getElementById('f-dev').checked,
+    query:      document.getElementById('f-query').checked,
+    hash:       document.getElementById('f-hash').checked,
+    patterns:   document.getElementById('custom-patterns').value.split('\n').map(s => s.trim()).filter(Boolean),
+  };
+}
+
+function shouldExclude(url, f) {
+  if (f.pagination && /[?&]page=|\/page\/\d|\/p\/\d/.test(url)) return true;
+  if (f.media      && /\.(png|jpe?g|gif|svg|ico|webp|pdf|zip|mp4|woff2?|ttf|eot)(\?|$)/i.test(url)) return true;
+  if (f.dev        && /wp-admin|wp-json|\.css(\?|$)|\.js(\?|$)|\.woff|\/feed\/?$/.test(url)) return true;
+  if (f.query      && url.includes('?')) return true;
+  if (f.hash       && url.includes('#')) return true;
+  for (const p of f.patterns) { if (p && url.includes(p)) return true; }
+  return false;
+}
+
+function extractLinks(html, base) {
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const links = [];
+    doc.querySelectorAll('a[href]').forEach(a => {
+      try { links.push(new URL(a.getAttribute('href'), base).href); } catch {}
+    });
+    return links;
+  } catch { return []; }
+}
+
+function getSection(url) {
+  try { const p = new URL(url).pathname.split('/').filter(Boolean); return p.length ? '/' + p[0] : '/'; }
+  catch { return '/'; }
+}
+
+function getDepth(url, base) {
+  try {
+    const baseParts = new URL(base).pathname.split('/').filter(Boolean).length;
+    return new URL(url).pathname.split('/').filter(Boolean).length - baseParts;
+  } catch { return 0; }
+}
+
+/* ═══════════════════════════════════════════
+   Crawl engine
+═══════════════════════════════════════════ */
+async function startCrawl() {
+  if (!activeProject) return;
+  const startUrl = activeProject.url;
+  let origin;
+  try { origin = new URL(startUrl).origin; } catch { alert('Invalid URL on project.'); return; }
+
+  const f           = getFilters();
+  const concurrency = parseInt(document.getElementById('concurrency').value) || 3;
+  const maxDepth    = parseInt(document.getElementById('crawl-max-depth').value) || 6;
+
+  excludedCount = 0;
+  crawlState = { running: true, paused: false, queue: [startUrl], visited: new Set([startUrl]), results: [], base: origin };
+  activeProject.crawl.startedAt = new Date().toISOString();
+
+  setEnabled('btn-crawl-start', false);
+  show('btn-crawl-stop');
+  show('btn-crawl-pause');
+  showResults();
+  document.getElementById('result-rows').innerHTML = '';
+  show('crawl-progress-wrap');
+  document.getElementById('crawl-progress-fill').classList.add('crawling');
+  document.getElementById('snail-emoji').classList.add('crawling');
+  setEnabled('btn-save-crawl', false);
+  setEnabled('btn-copy-urls', false);
+  updateStats();
+  setStatusText('crawling…');
+  setQueueInfo('');
+
+  async function worker() {
+    while (crawlState.running) {
+      while (crawlState.paused && crawlState.running) await new Promise(r => setTimeout(r, 120));
+      if (!crawlState.running) break;
+      const url = crawlState.queue.shift();
+      if (!url) {
+        await new Promise(r => setTimeout(r, 80));
+        if (crawlState.queue.length === 0) break;
+        continue;
+      }
+      const item = { url, ok: null, status: null, statusText: '…', depth: getDepth(url, origin), section: getSection(url) };
+      crawlState.results.push(item);
+      appendResultRow(item);
+      updateStats();
+      setQueueInfo(crawlState.queue.length + ' in queue');
+      const result = await fetchPage(url);
+      item.ok = result.ok; item.status = result.status; item.statusText = result.statusText;
+      if (result.html) { const m = result.html.match(/<title[^>]*>([^<]{1,80})<\/title>/i); if (m) item.title = m[1].trim(); }
+      updateResultRow(item);
+      updateStats();
+      if (result.html && crawlState.running) {
+        for (const lnk of extractLinks(result.html, url)) {
+          try {
+            const u = new URL(lnk);
+            if (u.origin !== origin) continue;
+            const clean = (u.origin + u.pathname).replace(/\/+$/, '') || u.origin + '/';
+            if (crawlState.visited.has(clean)) continue;
+            const depth = clean.split('/').filter(Boolean).length - new URL(origin).pathname.split('/').filter(Boolean).length;
+            if (depth >= maxDepth) { excludedCount++; updateExcluded(); continue; }
+            if (shouldExclude(clean, f)) { excludedCount++; updateExcluded(); crawlState.visited.add(clean); continue; }
+            crawlState.visited.add(clean);
+            crawlState.queue.push(clean);
+          } catch {}
+        }
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+  crawlState.running = false;
+  setEnabled('btn-crawl-start', true);
+  hide('btn-crawl-stop');
+  hide('btn-crawl-pause');
+  document.getElementById('crawl-progress-fill').classList.remove('crawling');
+  document.getElementById('snail-emoji').classList.remove('crawling');
+  setQueueInfo('');
+
+  const n = crawlState.results.length;
+  if (n > 0) {
+    setEnabled('btn-save-crawl', true);
+    setEnabled('btn-copy-urls', true);
+    setStatusText('done — ' + n + ' URL' + (n !== 1 ? 's' : '') + ' found');
+  } else {
+    setStatusText('done — no URLs found');
+  }
+}
+
+function stopCrawl() {
+  crawlState.running = false; crawlState.paused = false;
+  hide('btn-crawl-stop'); hide('btn-crawl-pause');
+  setEnabled('btn-crawl-start', true);
+  document.getElementById('crawl-progress-fill').classList.remove('crawling');
+  document.getElementById('snail-emoji').classList.remove('crawling');
+  const n = crawlState.results.length;
+  setStatusText('stopped — ' + n + ' URL' + (n !== 1 ? 's' : '') + ' found');
+  if (n > 0) { setEnabled('btn-save-crawl', true); setEnabled('btn-copy-urls', true); }
+}
+
+function togglePause() {
+  if (!crawlState.running) return;
+  crawlState.paused = !crawlState.paused;
+  const btn = document.getElementById('btn-crawl-pause');
+  if (crawlState.paused) {
+    btn.textContent = '▶ Resume';
+    document.getElementById('snail-emoji').classList.remove('crawling');
+    setStatusText('paused — click Resume to continue');
+  } else {
+    btn.textContent = '⏸ Pause';
+    document.getElementById('snail-emoji').classList.add('crawling');
+    setStatusText('crawling…');
+  }
+}
+
+function setStatusText(t) { document.getElementById('crawl-status-text').textContent = t; }
+function setQueueInfo(t)   { document.getElementById('crawl-queue-info').textContent = t; }
+
+function updateStats() {
+  const r   = crawlState.results;
+  const ok  = r.filter(x => x.ok).length;
+  const err = r.filter(x => x.ok === false && x.statusText !== 'blocked').length;
+  const blk = r.filter(x => x.statusText === 'blocked').length;
+  document.getElementById('stat-total').textContent = r.length;
+  document.getElementById('stat-ok').textContent    = ok;
+  document.getElementById('stat-err').textContent   = err;
+  document.getElementById('stat-blk').textContent   = blk;
+}
+
+function updateExcluded() {
+  const wrap = document.getElementById('stat-excl-wrap');
+  const el   = document.getElementById('stat-excl');
+  if (!el) return;
+  if (excludedCount > 0) { el.textContent = excludedCount; wrap.style.display = ''; }
+}
+
+function badgeInfo(item) {
+  if (item.statusText === '…')       return ['badge-pend', '…'];
+  if (item.statusText === 'blocked') return ['badge-blk',  'blocked'];
+  if (item.ok)                       return ['badge-ok',   String(item.status)];
+  return ['badge-err', String(item.status || 'ERR')];
+}
+
+function makeRow(item) {
+  const d = document.createElement('div');
+  d.className = 'spider-row';
+  const [bc, bt] = badgeInfo(item);
+  d.innerHTML = '<span class="spider-url" title="' + esc(item.url) + '">' + esc(item.url) + '</span><span class="spider-depth">d' + item.depth + '</span><span class="spider-badge ' + bc + '">' + bt + '</span>';
+  rowMap.set(item, d);
+  return d;
+}
+
+function appendResultRow(item) {
+  if (!matchesFilter(item)) return;
+  document.getElementById('result-rows').appendChild(makeRow(item));
+}
+
+function updateResultRow(item) {
+  const el = rowMap.get(item); if (!el) return;
+  const badge = el.querySelector('.spider-badge'); if (!badge) return;
+  const [bc, bt] = badgeInfo(item);
+  badge.className = 'spider-badge ' + bc; badge.textContent = bt;
+  if (!matchesFilter(item)) el.remove();
+}
+
+function matchesFilter(item) {
+  if (resultFilter === 'ok'      && !item.ok) return false;
+  if (resultFilter === 'errors'  && (item.ok || item.statusText === 'blocked')) return false;
+  if (resultFilter === 'blocked' && item.statusText !== 'blocked') return false;
+  if (resultSearch && !item.url.toLowerCase().includes(resultSearch.toLowerCase())) return false;
+  return true;
+}
+
+function setResultFilter(f, btn) {
+  resultFilter = f;
+  document.querySelectorAll('.fpill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderResults();
+}
+
+function renderResults() {
+  resultSearch = document.getElementById('result-search').value;
+  const clr = document.getElementById('search-clear');
+  if (clr) clr.style.display = resultSearch ? '' : 'none';
+  const container = document.getElementById('result-rows');
+  container.innerHTML = '';
+  crawlState.results.filter(matchesFilter).forEach(item => container.appendChild(makeRow(item)));
+}
+
+function clearSearch() {
+  document.getElementById('result-search').value = '';
+  resultSearch = '';
+  const clr = document.getElementById('search-clear');
+  if (clr) clr.style.display = 'none';
+  renderResults();
+}
+
+function copyURLs() {
+  const urls = crawlState.results.map(r => r.url).join('\n');
+  navigator.clipboard.writeText(urls).then(() => {
+    const btn = document.getElementById('btn-copy-urls');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   Save crawl to project → foundrystore
+═══════════════════════════════════════════ */
+async function saveCrawlToProject() {
+  if (!activeProject || !crawlState.results.length) return;
+  const btn = document.getElementById('btn-save-crawl');
+  const msg = document.getElementById('save-crawl-msg');
+  btn.disabled = true; btn.textContent = 'Saving…'; msg.textContent = '';
+
+  const f        = getFilters();
+  const isImport = document.getElementById('mode-import-btn').classList.contains('active');
+  const status   = crawlState.running ? 'stopped' : (isImport ? 'imported' : 'complete');
+  const ok       = crawlState.results.filter(r => r.ok).length;
+
+  activeProject.crawl = {
+    status,
+    startedAt:   activeProject.crawl.startedAt || new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    settings: {
+      concurrency: parseInt(document.getElementById('concurrency').value) || 3,
+      maxDepth:    parseInt(document.getElementById('crawl-max-depth').value) || 6,
+      filters:     { pagination: f.pagination, media: f.media, dev: f.dev, query: f.query, hash: f.hash, customPatterns: f.patterns },
+    },
+    totalUrls: crawlState.results.length,
+    okUrls:    ok,
+    results:   crawlState.results.map(r => ({ url: r.url, ok: r.ok, status: r.status, statusText: r.statusText, depth: r.depth, section: r.section, title: r.title || '' })),
+  };
+  activeProject.updatedAt = new Date().toISOString();
+
+  try {
+    upsertHistoryEntry(activeProject);
+    updateTopbar();
+    // Attempt Worker persist in background
+    storeProject(activeProject).catch(() => {});
+    btn.textContent = '✓ Saved'; btn.disabled = false;
+    msg.textContent = 'Saved — switching to Overview…';
+    setTimeout(() => {
+      const overviewBtn = document.querySelector('.nav-item[onclick*="overview"]');
+      showPage('overview', overviewBtn);
+    }, 900);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '↓ Save to project';
+    msg.textContent = '⚠ Save failed: ' + e.message;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Exports
+═══════════════════════════════════════════ */
+function dl(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name; a.click();
+}
+
+function safeName() {
+  return (activeProject ? activeProject.name : 'alchemy').replace(/[^a-z0-9-_]/gi, '_').toLowerCase();
+}
+
+function exportAlchemy() {
+  if (!activeProject) return;
+  dl(safeName() + '.alchemy', JSON.stringify(activeProject, null, 2), 'application/json');
+}
+
+function exportCSV() {
+  if (!activeProject || !activeProject.crawl.results.length) return;
+  const rows = [['url','ok','status','depth','section','title']];
+  activeProject.crawl.results.forEach(r => rows.push([r.url, r.ok ? 'true' : 'false', r.status || '', r.depth, r.section, r.title || '']));
+  dl(safeName() + '-crawl.csv', rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n'), 'text/csv');
+}
+
+function exportXML() {
+  if (!activeProject || !activeProject.crawl.results.length) return;
+  const locs = activeProject.crawl.results.filter(r => r.ok).map(r => '  <url><loc>' + esc(r.url) + '</loc></url>').join('\n');
+  dl(safeName() + '-sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + locs + '\n</urlset>', 'application/xml');
+}
+
+function exportJSON() {
+  if (!activeProject || !activeProject.crawl.results.length) return;
+  dl(safeName() + '-crawl.json', JSON.stringify(activeProject.crawl.results, null, 2), 'application/json');
+}
+
+/* ═══════════════════════════════════════════
+   Accordion
+═══════════════════════════════════════════ */
+function toggleAccordion(headerId, bodyId) {
+  document.getElementById(headerId).classList.toggle('open');
+  document.getElementById(bodyId).classList.toggle('open');
+}
+
+/* ═══════════════════════════════════════════
+   DOM helpers
+═══════════════════════════════════════════ */
+function show(id)             { const el = document.getElementById(id); if (el) el.style.display = ''; }
+function hide(id)             { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
+function showResults()        { show('crawler-results'); show('crawl-progress-wrap'); }
+function setEnabled(id, on)   {
+  const el = document.getElementById(id); if (!el) return;
+  el.disabled = !on;
+  el.style.opacity = on ? '' : '0.4';
+  el.style.pointerEvents = on ? '' : 'none';
+}
+
+/* ═══════════════════════════════════════════
+   Utilities
+═══════════════════════════════════════════ */
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  catch { return iso; }
+}
+
+/* ═══════════════════════════════════════════
+   Greetings + facts (shown when no project selected)
+═══════════════════════════════════════════ */
+const GREETINGS = [
+  "Hey, you're back! 👋",
+  "Welcome back, migration master 💪",
+  "Good to see you — let's get to work ✨",
+  "Oh hey! Ready to sort some sites? 🌐",
+  "Hello, you absolute legend 🌟",
+  "Another day, another migration. You've got this 💎",
+  "URLs in disarray? Not for long 🫡",
+  "Back at it — your future self will thank you 🙌",
+  "The sites won't migrate themselves... but you will 🔥",
+  "Ready to make the internet 1% less broken? Let's go 🌐",
+  "The redirects missed you. Truly 🗺️",
+  "Ah, the Alchemy keeper returns 🍂",
+];
+
+const FACTS = [
+  // Migrations
+  "Site migrations are in the top 3 causes of sudden organic traffic drops. A crawl audit prevents disasters.",
+  "A 301 redirect passes ~99% of link equity to the destination — a 302 passes almost none. Choose wisely.",
+  "Google can take weeks to fully process a site migration, even with perfect redirects in place.",
+  "A redirect chain of just 3 hops can noticeably slow page load times for users and crawlers alike.",
+  "404s cost real money in lost traffic and trust. Every redirect you confirm is saving someone's day.",
+  "A well-planned redirect map is a love letter to your future self.",
+  // Architecture
+  "A well-structured sitemap is one of the clearest signals of a healthy website.",
+  "Information architecture is UX. If users can't find it, it doesn't exist.",
+  "Orphaned pages — ones with no internal links — are effectively invisible to search engines.",
+  "Flat site structures (everything within 3 clicks of home) consistently outperform deep ones in search.",
+  "The deeper a page sits in your architecture, the less crawl budget Google spends on it.",
+  "Internal linking is one of the most underrated SEO levers. Your sitemap shows where the gaps are.",
+  // SEO & digital
+  "Canonicalisation, redirect mapping, and sitemap auditing are the holy trinity of technical SEO.",
+  "The first result on Google gets ~27% of all clicks. Architecture helps pages get there.",
+  "Page speed is a ranking factor — but more importantly, users leave if your page takes more than 3 seconds.",
+  "50% of search queries are four words or longer. Long tail is where the real traffic hides.",
+  "Content that answers a question directly is 2× more likely to appear in a featured snippet. Be helpful.",
+  "The algorithm changes. User intent doesn't. Build for people first.",
+  // Compliments
+  "You're using a tool more capable than what most agencies charge thousands to provide manually.",
+  "The average enterprise site migration takes 3–6 months. You're already ahead of the curve.",
+  "The fact that you care about doing this properly is rare. It matters more than you know.",
+  "Whoever your client is, they're lucky to have someone this thorough on their side.",
+  "Attention to detail in site migrations is a superpower. You clearly have it.",
+  "Most people skip the QA step entirely. You're not most people.",
+  "You clearly know your stuff — most people would have given up and used a spreadsheet by now.",
+];
+
+function renderEmptyState() {
+  const g = document.getElementById('ov-greeting');
+  const f = document.getElementById('ov-fact');
+  if (g) g.textContent = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+  if (f) f.textContent = FACTS[Math.floor(Math.random() * FACTS.length)];
+}
+
+/* ═══════════════════════════════════════════
+   On load
+═══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  // Enter key on new project form
+  const nameInput = document.getElementById('npf-name');
+  const urlInput  = document.getElementById('npf-url');
+  if (nameInput) nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') urlInput.focus(); });
+  if (urlInput)  urlInput.addEventListener('keydown',  e => { if (e.key === 'Enter') createProject(); });
+
+  // Render projects list on load
+  renderProjectsList();
+
+  // Snail animation CSS — add to head dynamically (was in old CSS but references ID)
+  const style = document.createElement('style');
+  style.textContent = `
+    #snail-emoji.crawling { animation: snailWalk 2.6s ease-in-out infinite; }
+    @keyframes snailWalk {
+      0%   { transform: translateX(0px)   scaleX(-1); }
+      42%  { transform: translateX(-16px) scaleX(-1); }
+      50%  { transform: translateX(-16px) scaleX(1);  }
+      92%  { transform: translateX(0px)   scaleX(1);  }
+      100% { transform: translateX(0px)   scaleX(-1); }
+    }
+  `;
+  document.head.appendChild(style);
+});
+</script>
+</body>
+</html>
