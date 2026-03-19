@@ -1402,18 +1402,8 @@
             </div>
             <span class="tc-badge" id="tc-scout-badge">—</span>
           </div>
-          <div class="tc-body">
-            <div class="score-row">
-              <div class="score-pill sp-ok">   <span class="sp-val">74</span><span class="sp-lbl">Perf</span></div>
-              <div class="score-pill sp-ok">   <span class="sp-val">91</span><span class="sp-lbl">A11y</span></div>
-              <div class="score-pill sp-warn">  <span class="sp-val">68</span><span class="sp-lbl">SEO</span></div>
-              <div class="score-pill sp-ok">   <span class="sp-val">83</span><span class="sp-lbl">Best</span></div>
-            </div>
-            <div>
-              <div class="tc-finding-row"><div class="tf-bullet tb-err"></div>Missing X-Frame-Options header</div>
-              <div class="tc-finding-row"><div class="tf-bullet tb-warn"></div>3 images missing alt text</div>
-              <div class="tc-finding-row"><div class="tf-bullet tb-ok"></div>HTTPS enforced · sitemap found</div>
-            </div>
+          <div class="tc-body" id="tc-scout-body">
+            <div class="tc-empty">Open Scout to run an audit — results will appear here.</div>
           </div>
           <div class="tc-footer">
             <div>
@@ -2508,11 +2498,13 @@ function renderOverview() {
       else { badge.textContent = 'not started'; badge.classList.add('tb-idle'); }
     }
 
-    // Complete button
+    // Complete button — show "✓ complete" if done, "mark done" if opened, hidden if not started
     if (cmpl) {
       if (t && t.complete) {
         cmpl.textContent = '✓ complete'; cmpl.classList.add('done'); cmpl.style.display = '';
       } else if (t && t.openedAt) {
+        cmpl.textContent = 'mark done'; cmpl.classList.remove('done'); cmpl.style.display = '';
+      } else if (hasCrawl && TOOL_REGISTRY[key] && TOOL_REGISTRY[key].available) {
         cmpl.textContent = ''; cmpl.classList.remove('done'); cmpl.style.display = 'none';
       } else {
         cmpl.style.display = 'none';
@@ -2595,33 +2587,24 @@ async function toggleToolComplete(toolKey) {
   const t = activeProject.tools[toolKey];
   if (!t) return;
   t.complete = !t.complete;
+  if (t.complete && !t.openedAt) t.openedAt = new Date().toISOString();
   activeProject.updatedAt = new Date().toISOString();
   upsertHistoryEntry(activeProject);
   storeProject(activeProject).catch(() => {});
-  // Update just the affected card's button rather than a full re-render
+  updateSidebarPills();
+  // Update just the affected card's button and re-render pipeline dots
   const btn = document.querySelector('[data-tool-complete="' + toolKey + '"]');
   if (btn) {
-    btn.textContent = t.complete ? '✓ complete' : '';
+    btn.textContent = t.complete ? '✓ complete' : 'mark done';
     btn.classList.toggle('done', t.complete);
   }
+  // Re-render pipeline dots
+  renderOverview();
 }
 
 function openTool(toolKey) {
-  if (!activeProject) return;
-  const URLS = {
-    scout:    'https://elleiana.github.io/Scout/',
-    canopy:   'https://elleiana.github.io/Canopy/',
-    waypoint: 'https://elleiana.github.io/Waypoint/',
-  };
-  const url = URLS[toolKey]; if (!url) return;
-  const t = activeProject.tools[toolKey];
-  if (t && !t.openedAt) {
-    t.openedAt = new Date().toISOString();
-    activeProject.updatedAt = new Date().toISOString();
-    storeProject(activeProject).catch(() => {});
-    upsertHistoryEntry(activeProject);
-  }
-  window.open(url + '?project=' + activeProject.id, '_blank', 'noopener');
+  const navBtn = document.getElementById('nav-' + toolKey);
+  loadTool(toolKey, navBtn);
 }
 
 /* ═══════════════════════════════════════════
