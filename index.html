@@ -999,6 +999,15 @@
     .progress-fill.crawling { animation: barPulse 1.5s ease-in-out infinite; width: 100%; }
     @keyframes barPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
+    /* ── Pill buttons (mode/proxy toggles) ── */
+    .pill-group { display: flex; gap: 0; }
+    .pill { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; padding: 0.28rem 0.75rem; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; background: none; transition: all 0.15s; }
+    .pill:first-child { border-radius: 99px 0 0 99px; }
+    .pill:last-child  { border-radius: 0 99px 99px 0; }
+    .pill + .pill { border-left: none; }
+    .pill:hover { color: var(--text-title); }
+    .pill.active { background: var(--teal); border-color: var(--teal); color: #e0ddd8; }
+    /* ── Filter pills (crawl results) ── */
     .fpill { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; padding: 0.25rem 0.65rem; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; background: none; transition: all 0.15s; }
     .fpill:first-child { border-radius: 3px 0 0 3px; }
     .fpill:last-child  { border-radius: 0 3px 3px 0; }
