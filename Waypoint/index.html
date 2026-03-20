@@ -418,6 +418,27 @@
     .btn-cancel:hover { background: #c86a5a; color: #0a0a0d; }
     .custom-tag { font-size: 0.63rem; color: var(--custom-tag-text); background: var(--custom-tag-bg); border: 1px solid var(--custom-tag-bd); padding: 0.18rem 0.5rem; border-radius: 3px; }
 
+    /* ── Row notes ── */
+    .btn-note { background: none; border: 1px solid var(--flip-bd); color: var(--text-dimmer); width: 26px; height: 26px; border-radius: 3px; cursor: pointer; font-size: 0.78rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+    .btn-note:hover { border-color: #008080; color: #008080; }
+    .btn-note.has-note { border-color: #c8a060; color: #c8a060; }
+    .row-note-area { flex-basis: 100%; padding-top: 0.35rem; display: flex; align-items: flex-start; gap: 0.5rem; }
+    .row-note-input { flex: 1; background: var(--bg-edit); border: 1px solid var(--border); color: var(--text-body); padding: 0.28rem 0.6rem; border-radius: 3px; font-family: 'IBM Plex Sans', sans-serif; font-size: 0.69rem; outline: none; resize: none; line-height: 1.5; transition: border-color 0.15s; }
+    .row-note-input:focus { border-color: #008080; }
+    .row-note-preview { flex-basis: 100%; font-family: 'IBM Plex Sans', sans-serif; font-size: 0.67rem; color: #c8a060; padding: 0.2rem 0 0 0; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+
+    /* ── Directory grouping ── */
+    .dir-group-header { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; padding: 0.6rem 0.4rem 0.25rem; border-bottom: 1px solid var(--border-soft); margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.5rem; }
+    .dir-group-header strong { color: var(--text-title); font-weight: 600; }
+    .dir-group-count { color: var(--text-muted); font-size: 0.62rem; }
+    .dir-group-wrap { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.75rem; }
+
+    /* ── Shortcut modal ── */
+    .shortcut-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.4rem 1rem; align-items: center; }
+    .shortcut-key { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.2rem 0.5rem; color: var(--text-title); white-space: nowrap; justify-self: start; }
+    .shortcut-desc { font-family: 'IBM Plex Sans', sans-serif; font-size: 0.73rem; color: var(--text-muted); }
+    .shortcut-section { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); grid-column: 1 / -1; padding-top: 0.75rem; }
+
     /* redirect type toggle */
     .btn-type { background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 3px; padding: 0.18rem 0.5rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.63rem; cursor: pointer; transition: all 0.15s; flex-shrink: 0; white-space: nowrap; }
     .btn-type:hover { border-color: #008080; color: #008080; }
@@ -858,6 +879,10 @@
             <button class="search-clear hidden" id="search-clear" title="Clear search">✕</button>
           </div>
           <button class="btn-accept-all" id="btn-accept-all">accept all suggestions</button>
+          <label style="display:inline-flex;align-items:center;gap:0.35rem;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);cursor:pointer;margin-left:0.5rem;" title="Group rows by top-level directory">
+            <input type="checkbox" id="toggle-dir-group" style="accent-color:#008080;cursor:pointer;" /> group by directory
+          </label>
+          <button class="btn-session" id="btn-shortcuts" title="Keyboard shortcuts (?)" style="margin-left:auto;font-size:0.65rem;padding:0.2rem 0.55rem;">? shortcuts</button>
         </div>
 
         <!-- Jump controls -->
@@ -1011,6 +1036,11 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.getElementById('modal-boring')?.classList.add('hidden');
     document.getElementById('modal-help')?.classList.add('hidden');
+    document.getElementById('modal-shortcuts')?.classList.add('hidden');
+  }
+  if (e.key === '?' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    document.getElementById('modal-shortcuts')?.classList.toggle('hidden');
   }
 });
 
@@ -1373,10 +1403,10 @@ document.getElementById('btn-redo').addEventListener('click', redo);
 function buildCSV() {
   const confirmed = state.rows.filter(r => r.status === 'redirect' && r.confirmed);
   const overrides = state.rows.filter(r => r.status === 'unchanged' && r.override);
-  return [['Old URL','New URL','Type'],
-    ...confirmed.map(r => [r.old, r.confirmed, r.redirectType||301]),
-    ...overrides.map(r => [r.old, r.override, 301])
-  ].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  return [['Old URL','New URL','Type','Notes'],
+    ...confirmed.map(r => [r.old, r.confirmed, r.redirectType||301, r.note||'']),
+    ...overrides.map(r => [r.old, r.override, 301, r.note||''])
+  ].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
 }
 
 function buildHtaccess() {
@@ -1658,16 +1688,58 @@ function makeBadge(statusObj, type) {
 function renderRows(rows) {
   const container = document.getElementById('rows-container');
   if (!rows.length) { container.innerHTML = '<div class="empty">no URLs match this filter</div>'; return; }
-  container.innerHTML = '';
-  rows.forEach((row, i) => {
-    const el = makeRow(row);
-    el.dataset.index = i;
-    el.dataset.old = row.old;
-    el.setAttribute('tabindex', '0');
-    if (i === focusedRowIndex) el.classList.add('row-focused');
-    container.appendChild(el);
+
+  const groupByDir = document.getElementById('toggle-dir-group')?.checked;
+
+  if (!groupByDir) {
+    container.innerHTML = '';
+    rows.forEach((row, i) => {
+      const el = makeRow(row);
+      el.dataset.index = i;
+      el.dataset.old = row.old;
+      el.setAttribute('tabindex', '0');
+      if (i === focusedRowIndex) el.classList.add('row-focused');
+      container.appendChild(el);
+    });
+    container._displayedRows = rows;
+    return;
+  }
+
+  // Group by top-level directory segment
+  const groups = new Map();
+  rows.forEach(row => {
+    let seg = '/';
+    try {
+      const parts = new URL(row.old).pathname.split('/').filter(Boolean);
+      seg = parts.length ? '/' + parts[0] : '/';
+    } catch {}
+    if (!groups.has(seg)) groups.set(seg, []);
+    groups.get(seg).push(row);
   });
-  // Store displayed rows for keyboard nav
+
+  container.innerHTML = '';
+  let globalIndex = 0;
+  groups.forEach((groupRows, seg) => {
+    const header = document.createElement('div');
+    header.className = 'dir-group-header';
+    const confirmed = groupRows.filter(r => r.status === 'redirect' && r.confirmed).length;
+    const total = groupRows.filter(r => r.status === 'redirect').length;
+    header.innerHTML = `<strong>${esc(seg)}</strong><span class="dir-group-count">${groupRows.length} URL${groupRows.length !== 1 ? 's' : ''}${total ? ' · ' + confirmed + '/' + total + ' mapped' : ''}</span>`;
+    container.appendChild(header);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'dir-group-wrap';
+    groupRows.forEach(row => {
+      const el = makeRow(row);
+      el.dataset.index = globalIndex;
+      el.dataset.old = row.old;
+      el.setAttribute('tabindex', '0');
+      if (globalIndex === focusedRowIndex) el.classList.add('row-focused');
+      wrap.appendChild(el);
+      globalIndex++;
+    });
+    container.appendChild(wrap);
+  });
   container._displayedRows = rows;
 }
 
@@ -1785,7 +1857,9 @@ function makeRow(row) {
   const typeBtn = row.confirmed ? `<button class="btn-type${row.redirectType===302?' is-302':''}" data-old="${esc(row.old)}" title="Click to toggle redirect type">${row.redirectType||301}</button>` : '';
   const suggArea = `<div class="suggestion-area" id="sug-${cssId(row.old)}">${suggBtn}<button class="btn-edit" data-old="${esc(row.old)}" title="Edit">✎</button>${customTag}${loopBadge}${typeBtn}</div>`;
   const editArea = `<div class="edit-area hidden" id="edit-${cssId(row.old)}"><input class="edit-input" list="cands-${cssId(row.old)}" value="${esc(row.confirmed||row.suggestion||'')}" data-old="${esc(row.old)}" /><datalist id="cands-${cssId(row.old)}">${(row.candidates||[]).map(c=>`<option value="${esc(c.url)}">`).join('')}</datalist><button class="btn-sm btn-ok" data-old="${esc(row.old)}">✓</button><button class="btn-sm btn-cancel" data-old="${esc(row.old)}">✕</button></div>`;
-  div.innerHTML = `${checkbox}<span class="url-old" title="${esc(row.old)}">${esc(row.old)}</span><button class="btn-copy-url" data-old="${esc(row.old)}" title="Copy old URL">⧉</button><span class="arrow">→</span>` + suggArea + editArea;
+  const noteToggleBtn = `<button class="btn-note${row.note?' has-note':''}" data-old="${esc(row.old)}" title="${row.note?'Edit note':'Add note'}">✎<span style="font-size:0.55rem;vertical-align:super;line-height:0;">n</span></button>`;
+  const noteArea = `<div class="row-note-area${row.note?'':' hidden'}" id="note-area-${cssId(row.old)}"><textarea class="row-note-input" rows="2" data-old="${esc(row.old)}" placeholder="e.g. Client to confirm — may merge with /about" maxlength="500">${esc(row.note||'')}</textarea></div>`;
+  div.innerHTML = `${checkbox}<span class="url-old" title="${esc(row.old)}">${esc(row.old)}</span><button class="btn-copy-url" data-old="${esc(row.old)}" title="Copy old URL">⧉</button><span class="arrow">→</span>` + suggArea + editArea + noteToggleBtn + noteArea;
 
   div.querySelector('.btn-copy-url')?.addEventListener('click', e => {
     e.stopPropagation();
@@ -1839,6 +1913,27 @@ function makeRow(row) {
     if (e.key==='Enter') div.querySelector('.btn-ok').click();
     if (e.key==='Escape') div.querySelector('.btn-cancel').click();
   });
+
+  // Note toggle
+  div.querySelector('.btn-note')?.addEventListener('click', e => {
+    e.stopPropagation();
+    const o = e.currentTarget.dataset.old;
+    const area = document.getElementById(`note-area-${cssId(o)}`);
+    if (!area) return;
+    const isHidden = area.classList.toggle('hidden');
+    if (!isHidden) area.querySelector('textarea').focus();
+  });
+
+  // Note autosave on input
+  div.querySelector('.row-note-input')?.addEventListener('input', e => {
+    const o = e.currentTarget.dataset.old;
+    const r = state.rows.find(r => r.old === o);
+    if (!r) return;
+    r.note = e.currentTarget.value.trim() || null;
+    const btn = div.querySelector('.btn-note');
+    if (btn) btn.classList.toggle('has-note', !!r.note);
+  });
+
   return div;
 }
 
@@ -2765,12 +2860,30 @@ document.getElementById('rows-container').addEventListener('keydown', e => {
     render();
     move(1);
   }
+  if (e.key === 'n' || e.key === 'N') {
+    e.preventDefault();
+    const noteArea = document.querySelector(`[data-index="${focusedRowIndex}"] .row-note-area`);
+    if (noteArea) {
+      const isHidden = noteArea.classList.toggle('hidden');
+      if (!isHidden) noteArea.querySelector('textarea').focus();
+    }
+  }
 });
 
 // Set focusedRowIndex when clicking a row
 document.getElementById('rows-container').addEventListener('focusin', e => {
   const rowEl = e.target.closest('[data-index]');
   if (rowEl) focusedRowIndex = parseInt(rowEl.dataset.index, 10);
+});
+
+// Shortcuts modal button
+document.getElementById('btn-shortcuts')?.addEventListener('click', () => {
+  document.getElementById('modal-shortcuts')?.classList.remove('hidden');
+});
+
+// Directory grouping toggle
+document.getElementById('toggle-dir-group')?.addEventListener('change', () => {
+  if (state.rows.length) render();
 });
 
 document.getElementById('btn-check-loops').addEventListener('click', () => {
@@ -3358,6 +3471,34 @@ return { init };
       <p class="modal-text" style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🌿 Canopy</strong> — Crawls a live website and maps every internal URL into an interactive tree diagram. Explore the architecture by section and depth, export as PNG, SVG, CSV, or JSON. <a href="https://libertymoose.github.io/Canopy/" target="_blank" rel="noopener" class="modal-link">→ Open Canopy</a></p>
 
       <p class="modal-text" style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🧭 Waypoint</strong> — Takes old and new URL lists, suggests redirect matches, catches loops and chains, and exports a developer-ready map in CSV, .htaccess, or Nginx format. The last step before a site goes live. <a href="https://libertymoose.github.io/Waypoint/" target="_blank" rel="noopener" class="modal-link">→ Open Waypoint</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Keyboard Shortcuts Modal ── -->
+<div id="modal-shortcuts" class="modal-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title">Keyboard Shortcuts</span>
+      <button class="modal-close" onclick="document.getElementById('modal-shortcuts').classList.add('hidden')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="shortcut-grid">
+        <span class="shortcut-section">Navigation</span>
+        <span class="shortcut-key">↑ / k</span><span class="shortcut-desc">Move to previous row</span>
+        <span class="shortcut-key">↓ / j</span><span class="shortcut-desc">Move to next row</span>
+        <span class="shortcut-section">Row actions</span>
+        <span class="shortcut-key">Y</span><span class="shortcut-desc">Accept suggestion for focused row</span>
+        <span class="shortcut-key">E</span><span class="shortcut-desc">Open edit field for focused row</span>
+        <span class="shortcut-key">N</span><span class="shortcut-desc">Toggle note on focused row</span>
+        <span class="shortcut-key">X</span><span class="shortcut-desc">Select / deselect focused row</span>
+        <span class="shortcut-key">Backspace</span><span class="shortcut-desc">Clear confirmed redirect on focused row</span>
+        <span class="shortcut-section">Global</span>
+        <span class="shortcut-key">Ctrl+Z</span><span class="shortcut-desc">Undo</span>
+        <span class="shortcut-key">Ctrl+Y</span><span class="shortcut-desc">Redo</span>
+        <span class="shortcut-key">?</span><span class="shortcut-desc">Show this shortcuts panel</span>
+        <span class="shortcut-key">Esc</span><span class="shortcut-desc">Close modal / cancel edit</span>
+      </div>
     </div>
   </div>
 </div>
