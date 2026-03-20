@@ -211,6 +211,25 @@
     .data-card.bad .dc-value { color: #c86a5a; }
     html.light .data-card.bad .dc-value { color: #8a2020; }
 
+    /* ── Social preview cards ── */
+    .social-preview { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; max-width: 480px; margin-bottom: 0.5rem; font-family: 'IBM Plex Sans', sans-serif; background: var(--bg-card); }
+    .google-preview { padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
+    .sp-site-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.1rem; }
+    .sp-favicon { width: 18px; height: 18px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+    .sp-site-info { display: flex; flex-direction: column; gap: 0; }
+    .sp-site-name { font-size: 0.72rem; color: var(--text-body); line-height: 1.2; }
+    .sp-breadcrumb { font-size: 0.65rem; color: var(--text-muted); }
+    .sp-title { font-size: 0.88rem; color: #8ab4f8; font-weight: 500; line-height: 1.3; }
+    html.light .sp-title { color: #1a0dab; }
+    .sp-desc { font-size: 0.72rem; color: var(--text-body); line-height: 1.5; }
+    .share-preview { display: flex; flex-direction: column; }
+    .sp-img-placeholder { background: var(--bg-input); border-bottom: 1px solid var(--border); height: 72px; display: flex; align-items: center; justify-content: center; }
+    .sp-img-missing { background: repeating-linear-gradient(45deg, var(--bg) 0, var(--bg) 6px, var(--bg-input) 6px, var(--bg-input) 12px); }
+    .sp-card-body { padding: 0.65rem 0.85rem; display: flex; flex-direction: column; gap: 0.2rem; }
+    .sp-card-domain { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .sp-card-title { font-size: 0.78rem; color: var(--text-title); font-weight: 600; line-height: 1.3; }
+    .sp-card-desc { font-size: 0.68rem; color: var(--text-body); line-height: 1.5; }
+
     /* ── score rings ── */
     .score-rings { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.85rem; align-items: flex-end; }
     .score-ring-wrap { text-align: center; }
@@ -1971,7 +1990,37 @@ async function runTechStack(){
       ogHtml+='<div class="data-card '+(ogImg?'good':'bad')+'"><div class="dc-label">og:image</div><div class="dc-value">'+(ogImg?'✓':'✗')+'</div><div class="dc-sub">'+(ogImg?'present':'missing')+'</div></div>';
       ogHtml+='<div class="data-card '+(twCard?'good':'mid')+'"><div class="dc-label">Twitter card</div><div class="dc-value">'+(twCard?'✓':'✗')+'</div><div class="dc-sub">'+(twCard?'present':'not set')+'</div></div>';
       ogHtml+='</div>';
-      ogHtml+='<div class="field-label-sm" style="margin-bottom:0.4rem;">Structured data / Schema.org</div>';
+
+      // ── Social preview mockups ──────────────────────────────────────────
+      var previewTitle = ogTitle ? esc(ogTitle[1]) : '<span style="color:var(--text-dim);font-style:italic;">og:title missing</span>';
+      var previewDesc  = ogDesc  ? esc(ogDesc[1].slice(0,160)+(ogDesc[1].length>160?'…':'')) : (metaDescText ? esc(metaDescText.slice(0,160)+(metaDescText.length>160?'…':'')) : '<span style="color:var(--text-dim);font-style:italic;">no description</span>');
+      var domain = '';
+      try { domain = new URL(S.url).hostname; } catch {}
+
+      // Google result preview
+      ogHtml += '<div class="field-label-sm" style="margin-bottom:0.5rem;">Search result preview</div>';
+      ogHtml += '<div class="social-preview google-preview">';
+      ogHtml += '<div class="sp-site-row"><div class="sp-favicon"></div><div class="sp-site-info"><div class="sp-site-name">'+esc(S.client||domain)+'</div><div class="sp-breadcrumb">'+esc(domain)+'</div></div></div>';
+      ogHtml += '<div class="sp-title">'+(ogTitle ? esc(ogTitle[1].slice(0,60)+(ogTitle[1].length>60?'…':'')) : '<span style="color:var(--text-dim);font-style:italic;">no title</span>')+'</div>';
+      ogHtml += '<div class="sp-desc">'+previewDesc+'</div>';
+      ogHtml += '</div>';
+
+      // Social share card preview
+      ogHtml += '<div class="field-label-sm" style="margin-bottom:0.5rem;margin-top:0.85rem;">Social share card preview</div>';
+      ogHtml += '<div class="social-preview share-preview">';
+      if (ogImg) {
+        ogHtml += '<div class="sp-img-placeholder"><span style="font-size:0.65rem;color:var(--text-muted);">og:image present — image will appear here</span></div>';
+      } else {
+        ogHtml += '<div class="sp-img-placeholder sp-img-missing"><span style="font-size:0.65rem;color:var(--text-dim);">no og:image — card will show without image</span></div>';
+      }
+      ogHtml += '<div class="sp-card-body">';
+      ogHtml += '<div class="sp-card-domain">'+esc(domain.toUpperCase())+'</div>';
+      ogHtml += '<div class="sp-card-title">'+(ogTitle ? esc(ogTitle[1].slice(0,70)+(ogTitle[1].length>70?'…':'')) : '<span style="color:var(--text-dim);font-style:italic;">no title</span>')+'</div>';
+      ogHtml += '<div class="sp-card-desc">'+previewDesc+'</div>';
+      ogHtml += '</div></div>';
+      // ── end social previews ─────────────────────────────────────────────
+
+      ogHtml+='<div class="field-label-sm" style="margin-bottom:0.4rem;margin-top:0.85rem;">Structured data / Schema.org</div>';
       ogHtml+='<div class="data-grid" style="margin-bottom:0.75rem;">';
       ogHtml+='<div class="data-card '+(hasSchema?'good':'mid')+'"><div class="dc-label">JSON-LD schema</div><div class="dc-value">'+(hasSchema?'✓':'✗')+'</div><div class="dc-sub">'+(hasSchema?'present':'not detected')+'</div></div>';
       if(schemaTypes.length) ogHtml+='<div class="data-card good"><div class="dc-label">Schema types</div><div class="dc-value" style="font-size:0.72rem;">'+esc(schemaTypes.slice(0,3).join(', '))+'</div><div class="dc-sub">'+schemaTypes.length+' type'+(schemaTypes.length>1?'s':'')+'</div></div>';
@@ -2604,7 +2653,17 @@ function renderFromRaw(){
     ogHtml+=`<div class="data-card ${og.desc?'good':'bad'}"><div class="dc-label">og:description</div><div class="dc-value">${og.desc?'✓':'✗'}</div><div class="dc-sub">${og.desc?'present':'missing'}</div></div>`;
     ogHtml+=`<div class="data-card ${og.img?'good':'bad'}"><div class="dc-label">og:image</div><div class="dc-value">${og.img?'✓':'✗'}</div><div class="dc-sub">${og.img?'present':'missing'}</div></div>`;
     ogHtml+=`<div class="data-card ${og.twCard?'good':'mid'}"><div class="dc-label">Twitter card</div><div class="dc-value">${og.twCard?'✓':'✗'}</div><div class="dc-sub">${og.twCard?'present':'not set'}</div></div></div>`;
-    ogHtml+='<div class="field-label-sm" style="margin-bottom:0.4rem;">Structured data / Schema.org</div><div class="data-grid" style="margin-bottom:0.75rem;">';
+
+    // Social preview mockups (from saved raw data)
+    var rDomain=''; try{rDomain=new URL(S.url||'').hostname;}catch{}
+    var rTitle = og.title ? esc(og.title) : '<span style="color:var(--text-dim);font-style:italic;">no title</span>';
+    var rDesc  = og.descText ? esc(og.descText.slice(0,160)+(og.descText.length>160?'…':'')) : '<span style="color:var(--text-dim);font-style:italic;">no description</span>';
+    ogHtml += '<div class="field-label-sm" style="margin-bottom:0.5rem;">Search result preview</div>';
+    ogHtml += `<div class="social-preview google-preview"><div class="sp-site-row"><div class="sp-favicon"></div><div class="sp-site-info"><div class="sp-site-name">${esc(S.client||rDomain)}</div><div class="sp-breadcrumb">${esc(rDomain)}</div></div></div><div class="sp-title">${og.title?esc(og.title.slice(0,60)+(og.title.length>60?'…':'')):'<span style="color:var(--text-dim);font-style:italic;">no title</span>'}</div><div class="sp-desc">${rDesc}</div></div>`;
+    ogHtml += '<div class="field-label-sm" style="margin-bottom:0.5rem;margin-top:0.85rem;">Social share card preview</div>';
+    ogHtml += `<div class="social-preview share-preview"><div class="sp-img-placeholder${og.img?'':' sp-img-missing'}"><span style="font-size:0.65rem;color:var(--text-muted);">${og.img?'og:image present — image will appear here':'no og:image — card will show without image'}</span></div><div class="sp-card-body"><div class="sp-card-domain">${esc(rDomain.toUpperCase())}</div><div class="sp-card-title">${og.title?esc(og.title.slice(0,70)+(og.title.length>70?'…':'')):'<span style="color:var(--text-dim);font-style:italic;">no title</span>'}</div><div class="sp-card-desc">${rDesc}</div></div></div>`;
+
+    ogHtml+='<div class="field-label-sm" style="margin-bottom:0.4rem;margin-top:0.85rem;">Structured data / Schema.org</div><div class="data-grid" style="margin-bottom:0.75rem;">';
     ogHtml+=`<div class="data-card ${og.schema?'good':'mid'}"><div class="dc-label">JSON-LD schema</div><div class="dc-value">${og.schema?'✓':'✗'}</div><div class="dc-sub">${og.schema?'present':'not detected'}</div></div>`;
     if(og.schemaTypes&&og.schemaTypes.length)ogHtml+=`<div class="data-card good"><div class="dc-label">Schema types</div><div class="dc-value" style="font-size:0.72rem;">${esc(og.schemaTypes.slice(0,3).join(', '))}</div><div class="dc-sub">${og.schemaTypes.length} type${og.schemaTypes.length>1?'s':''}</div></div>`;
     ogHtml+='</div>';
