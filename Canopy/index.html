@@ -323,6 +323,20 @@
     /* Diagram search highlight */
     .dnode.search-match rect { stroke-width: 2.5 !important; stroke: #008080 !important; }
     .dnode.search-no-match { opacity: 0.2; }
+
+    /* Canopy Diff tab */
+    .cdiff-row { display:flex;align-items:baseline;gap:0.65rem;padding:0.42rem 0.85rem;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.69rem;border:1px solid var(--border); }
+    .cdiff-row.cdiff-added   { background:#0c1f10;border-color:#243d28; }
+    .cdiff-row.cdiff-removed { background:#1e0f0c;border-color:#3a1e1a; }
+    .cdiff-row.cdiff-moved   { background:#1a1008;border-color:#3a2808; }
+    .cdiff-row.cdiff-same    { background:var(--bg-card);border-color:var(--border-soft);opacity:0.55; }
+    .cdiff-badge { font-size:0.6rem;padding:0.15rem 0.45rem;border-radius:3px;flex-shrink:0;font-weight:600; }
+    .cdiff-badge-added   { background:#172a1c;color:#5aab72;border:1px solid #243d28; }
+    .cdiff-badge-removed { background:#1e0f0c;color:#c86a5a;border:1px solid #3a1e1a; }
+    .cdiff-badge-moved   { background:#1a1008;color:#c8a060;border:1px solid #3a2808; }
+    .cdiff-badge-same    { background:var(--bg);color:var(--text-muted);border:1px solid var(--border); }
+    .cdiff-url  { color:var(--text-body);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .cdiff-meta { font-size:0.63rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0; }
     .d-info-header { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; display: flex; justify-content: space-between; }
     .d-info-body { padding: 0.65rem 0.75rem; display: flex; flex-direction: column; gap: 5px; }
     .d-info-row { display: flex; justify-content: space-between; font-size: 0.68rem; }
@@ -539,6 +553,7 @@
   <div class="canopy-tabnav">
     <button class="nav-tab active" data-page="diagram" onclick="switchPage('diagram')"><span class="nav-emoji">🌳</span>Diagram</button>
     <button class="nav-tab" data-page="export" onclick="switchPage('export')"><span class="nav-emoji">🍂</span>Export</button>
+    <button class="nav-tab" data-page="diff" onclick="switchPage('diff')"><span class="nav-emoji">⚡</span>Diff</button>
   </div>
 
   <!-- ══════════════════════════════════════
@@ -788,6 +803,70 @@
     </div>
   </div><!-- /page-export -->
 
+  <!-- ══════════════════════════════════════
+       PAGE: Diff
+  ══════════════════════════════════════ -->
+  <div id="page-diff" class="hidden">
+    <div class="page-heading">
+      <div class="page-heading-title">Diff</div>
+      <div class="page-heading-sub">Compare two Canopy crawls — see what pages were added, removed, or restructured.</div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:1rem;">
+      <div class="card-header">
+        <div class="card-header-text">
+          <div class="card-title">Load snapshots</div>
+          <div class="card-help">Export two crawls as JSON from the Export tab, then load them here to compare.</div>
+        </div>
+      </div>
+      <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:0.5rem;">Snapshot A <span style="color:var(--text-dim);">— before</span></div>
+          <label class="btn-session" style="cursor:pointer;display:inline-block;">↑ load snapshot A (.json)
+            <input type="file" id="cdiff-file-a" accept=".json" hidden onchange="loadCanopyDiffFile('a',this)" />
+          </label>
+          <div id="cdiff-a-meta" style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);margin-top:0.5rem;min-height:1.2em;"></div>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:0.5rem;">Snapshot B <span style="color:var(--text-dim);">— after</span></div>
+          <label class="btn-session" style="cursor:pointer;display:inline-block;">↑ load snapshot B (.json)
+            <input type="file" id="cdiff-file-b" accept=".json" hidden onchange="loadCanopyDiffFile('b',this)" />
+          </label>
+          <div id="cdiff-b-meta" style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);margin-top:0.5rem;min-height:1.2em;"></div>
+        </div>
+      </div>
+      <div class="card-body" style="padding-top:0;display:flex;gap:0.75rem;align-items:center;">
+        <button class="btn-check" id="cdiff-run-btn" onclick="runCanopyDiff()" disabled>⚡ Compare</button>
+        <button class="btn-session" id="cdiff-clear-btn" onclick="clearCanopyDiff()" style="display:none;">✕ clear</button>
+        <span id="cdiff-status" style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--text-muted);"></span>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div id="cdiff-summary" class="hidden" style="margin-bottom:1rem;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.65rem;margin-bottom:1rem;">
+        <div class="data-card good"><div class="dc-label">Added</div><div class="dc-value" id="cdiff-count-added">0</div><div class="dc-sub">new pages in B</div></div>
+        <div class="data-card bad"><div class="dc-label">Removed</div><div class="dc-value" id="cdiff-count-removed">0</div><div class="dc-sub">in A but not in B</div></div>
+        <div class="data-card mid"><div class="dc-label">Restructured</div><div class="dc-value" id="cdiff-count-moved">0</div><div class="dc-sub">depth or section changed</div></div>
+        <div class="data-card"><div class="dc-label">Unchanged</div><div class="dc-value" id="cdiff-count-same">0</div><div class="dc-sub">identical in both</div></div>
+      </div>
+
+      <div style="margin-bottom:0.65rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);">show:</span>
+        <button class="pill active" data-cdiff-filter="all">all</button>
+        <button class="pill" data-cdiff-filter="added">added</button>
+        <button class="pill" data-cdiff-filter="removed">removed</button>
+        <button class="pill" data-cdiff-filter="moved">restructured</button>
+        <button class="pill" data-cdiff-filter="same">unchanged</button>
+        <input class="search-input" id="cdiff-search" type="text" placeholder="filter URLs…" autocomplete="off" oninput="renderCanopyDiffRows()" style="margin-left:auto;max-width:240px;" />
+      </div>
+
+      <div id="cdiff-rows" style="display:flex;flex-direction:column;gap:4px;max-height:540px;overflow-y:auto;"></div>
+    </div>
+
+    <div id="cdiff-empty" class="placeholder">load two Canopy JSON exports above, then click Compare</div>
+  </div><!-- /page-diff -->
+
 </div><!-- /app -->
 
 <!-- Modals -->
@@ -935,7 +1014,7 @@ function setDiagramTheme(theme, btn) {
 /* ═══════════════════════════════════════════
    Navigation
 ═══════════════════════════════════════════ */
-const ALL_PAGES = ['diagram','export'];
+const ALL_PAGES = ['diagram','export','diff'];
 
 function switchPage(name) {
   ALL_PAGES.forEach(p => {
@@ -2777,6 +2856,144 @@ window.previewCustomLabel = previewCustomLabel;
 window.setNodeTag         = setNodeTag;
 window.handleDiagramSearch = handleDiagramSearch;
 window.clearDiagramSearch  = clearDiagramSearch;
+
+/* ═══════════════════════════════════════════
+   Canopy Diff — snapshot comparison
+═══════════════════════════════════════════ */
+const canopyDiffState = { a: null, b: null, results: [], filter: 'all' };
+
+function loadCanopyDiffFile(slot, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const urls = parsed.urls || [];
+      canopyDiffState[slot] = { name: file.name, urls };
+      const metaEl = document.getElementById('cdiff-' + slot + '-meta');
+      if (metaEl) metaEl.textContent = urls.length + ' URL' + (urls.length !== 1 ? 's' : '') + ' · ' + (parsed.crawledAt ? new Date(parsed.crawledAt).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : file.name);
+    } catch {
+      const metaEl = document.getElementById('cdiff-' + slot + '-meta');
+      if (metaEl) metaEl.textContent = '⚠ Invalid file — use Canopy JSON export';
+      return;
+    }
+    document.getElementById('cdiff-run-btn').disabled = !(canopyDiffState.a && canopyDiffState.b);
+  };
+  reader.readAsText(file);
+}
+
+function runCanopyDiff() {
+  const { a, b } = canopyDiffState;
+  if (!a || !b) return;
+
+  const mapA = new Map(a.urls.map(r => [r.url, r]));
+  const mapB = new Map(b.urls.map(r => [r.url, r]));
+  const results = [];
+
+  // Added: in B not in A
+  mapB.forEach((r, url) => {
+    if (!mapA.has(url)) results.push({ url, statusA: null, statusB: r, kind: 'added' });
+  });
+
+  // Removed or restructured: in A
+  mapA.forEach((r, url) => {
+    if (!mapB.has(url)) {
+      results.push({ url, statusA: r, statusB: null, kind: 'removed' });
+    } else {
+      const rB = mapB.get(url);
+      // Restructured: depth or section changed
+      const depthChanged   = r.depth !== rB.depth;
+      const sectionChanged = r.section !== rB.section;
+      if (depthChanged || sectionChanged) {
+        results.push({ url, statusA: r, statusB: rB, kind: 'moved', depthChanged, sectionChanged });
+      } else {
+        results.push({ url, statusA: r, statusB: rB, kind: 'same' });
+      }
+    }
+  });
+
+  // Sort: added → removed → moved → same, then alphabetically
+  const order = { added: 0, removed: 1, moved: 2, same: 3 };
+  results.sort((x, y) => order[x.kind] - order[y.kind] || x.url.localeCompare(y.url));
+  canopyDiffState.results = results;
+
+  document.getElementById('cdiff-count-added').textContent   = results.filter(r => r.kind==='added').length;
+  document.getElementById('cdiff-count-removed').textContent = results.filter(r => r.kind==='removed').length;
+  document.getElementById('cdiff-count-moved').textContent   = results.filter(r => r.kind==='moved').length;
+  document.getElementById('cdiff-count-same').textContent    = results.filter(r => r.kind==='same').length;
+
+  document.getElementById('cdiff-summary').classList.remove('hidden');
+  document.getElementById('cdiff-empty').classList.add('hidden');
+  document.getElementById('cdiff-clear-btn').style.display = '';
+  document.getElementById('cdiff-status').textContent = a.name + ' → ' + b.name;
+  renderCanopyDiffRows();
+}
+
+function renderCanopyDiffRows() {
+  const q = (document.getElementById('cdiff-search')?.value || '').toLowerCase();
+  const f = canopyDiffState.filter;
+  const rows = canopyDiffState.results.filter(r => {
+    if (f !== 'all' && r.kind !== f) return false;
+    if (q) return r.url.toLowerCase().includes(q);
+    return true;
+  });
+
+  const container = document.getElementById('cdiff-rows');
+  if (!container) return;
+  if (!rows.length) { container.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.72rem;color:var(--text-dim);padding:1.5rem;text-align:center;">no rows match this filter</div>'; return; }
+  container.innerHTML = '';
+
+  rows.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'cdiff-row cdiff-' + r.kind;
+    const badge = `<span class="cdiff-badge cdiff-badge-${r.kind}">${r.kind === 'moved' ? 'restructured' : r.kind}</span>`;
+    const urlEl = `<span class="cdiff-url" title="${esc(r.url)}">${esc(r.url)}</span>`;
+    let meta = '';
+    if (r.kind === 'added')   meta = `<span class="cdiff-meta">depth ${r.statusB.depth} · ${esc(r.statusB.section||'/')}</span>`;
+    if (r.kind === 'removed') meta = `<span class="cdiff-meta">was depth ${r.statusA.depth} · ${esc(r.statusA.section||'/')}</span>`;
+    if (r.kind === 'moved') {
+      const parts = [];
+      if (r.depthChanged)   parts.push('depth ' + r.statusA.depth + ' → ' + r.statusB.depth);
+      if (r.sectionChanged) parts.push(esc(r.statusA.section||'/') + ' → ' + esc(r.statusB.section||'/'));
+      meta = `<span class="cdiff-meta">${parts.join(' · ')}</span>`;
+    }
+    div.innerHTML = badge + urlEl + meta;
+    container.appendChild(div);
+  });
+}
+
+function clearCanopyDiff() {
+  canopyDiffState.a = null; canopyDiffState.b = null;
+  canopyDiffState.results = []; canopyDiffState.filter = 'all';
+  ['a','b'].forEach(s => {
+    const meta  = document.getElementById('cdiff-' + s + '-meta');
+    const input = document.getElementById('cdiff-file-' + s);
+    if (meta)  meta.textContent = '';
+    if (input) input.value = '';
+  });
+  document.getElementById('cdiff-summary').classList.add('hidden');
+  document.getElementById('cdiff-empty').classList.remove('hidden');
+  document.getElementById('cdiff-clear-btn').style.display = 'none';
+  document.getElementById('cdiff-run-btn').disabled = true;
+  document.getElementById('cdiff-status').textContent = '';
+  // Reset filter pills
+  document.querySelectorAll('[data-cdiff-filter]').forEach(b => b.classList.toggle('active', b.dataset.cdiffFilter === 'all'));
+}
+
+// Diff filter pills
+document.querySelectorAll('[data-cdiff-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    canopyDiffState.filter = btn.dataset.cdiffFilter;
+    document.querySelectorAll('[data-cdiff-filter]').forEach(b => b.classList.toggle('active', b.dataset.cdiffFilter === canopyDiffState.filter));
+    renderCanopyDiffRows();
+  });
+});
+
+// Expose diff functions on window for HTML attribute handlers
+window.loadCanopyDiffFile = loadCanopyDiffFile;
+window.runCanopyDiff      = runCanopyDiff;
+window.clearCanopyDiff    = clearCanopyDiff;
 
 return { init };
 
