@@ -1954,6 +1954,7 @@ async function loadTool(key, navBtn) {
 
   try {
     const res  = await fetch(meta.path);
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' fetching ' + meta.path);
     const html = await res.text();
     const parser = new DOMParser();
     const doc  = parser.parseFromString(html, 'text/html');
@@ -2022,7 +2023,7 @@ async function loadTool(key, navBtn) {
   } catch (err) {
     loading.style.display = 'none';
     activeTool = null; // reset so clicking again retries the fetch
-    mount.innerHTML = '<div style="padding:3rem 2rem;font-family:\'IBM Plex Mono\',monospace;font-size:0.78rem;color:var(--err);">Failed to load ' + meta.name + '. Make sure the file exists at ' + meta.path + '. <span style="opacity:0.6;">Click ' + meta.name + ' in the sidebar to try again.</span></div>';
+    mount.innerHTML = '<div style="padding:3rem 2rem;font-family:\'IBM Plex Mono\',monospace;font-size:0.78rem;color:var(--err);">Failed to load ' + meta.name + '. Make sure the file exists at ' + meta.path + '. <span style="opacity:0.6;">Click ' + meta.name + ' in the sidebar to try again.</span><br><br><span style="opacity:0.4;font-size:0.65rem;">Error: ' + (err && err.message ? err.message : String(err)) + '</span></div>';
   }
 }
 
