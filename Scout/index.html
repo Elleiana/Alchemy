@@ -901,8 +901,8 @@ function toggleAcc(id) {
 }
 
 // ── export button (internal tab nav only) ──
-document.getElementById('btn-go-export').addEventListener('click',()=>{buildReport();switchPage('export');});
-document.getElementById('btn-back-to-audit').addEventListener('click',()=>switchPage('audit'));
+document.getElementById('btn-go-export')?.addEventListener('click',()=>{buildReport();switchPage('export');});
+document.getElementById('btn-back-to-audit')?.addEventListener('click',()=>switchPage('audit'));
 
 function norm(raw) {
   raw=raw.trim(); if(!raw.startsWith('http'))raw='https://'+raw;
@@ -2979,8 +2979,8 @@ function saveAuditFile(){
   S.history=S.history.filter(h=>h.url!==S.url);S.history.push(data);if(S.history.length>10)S.history=S.history.slice(-10);
   localStorage.setItem('scout-history',JSON.stringify(S.history));
 }
-document.getElementById('btn-save-from-export').addEventListener('click',saveAuditFile);
-document.getElementById('btn-copy-report-html').addEventListener('click',()=>{
+document.getElementById('btn-save-from-export')?.addEventListener('click',saveAuditFile);
+document.getElementById('btn-copy-report-html')?.addEventListener('click',()=>{
   const report=document.getElementById('view-report');
   if(!report||!report.innerHTML.trim()){alert('Refresh the preview first.');return;}
   const html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Scout Report — '+esc(S.url)+'</title>'
