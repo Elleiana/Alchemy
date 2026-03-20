@@ -314,6 +314,29 @@
     .d-legend    { top: 14px; left: 14px; padding: 0.65rem 0.85rem; display: flex; flex-direction: column; gap: 5px; color: var(--text-muted); }
     .legend-item { display: flex; align-items: center; gap: 8px; }
     .legend-box  { width: 30px; height: 14px; border-radius: 2px; border: 1px solid; flex-shrink: 0; }
+
+    /* Node status tags */
+    .node-tag-btn { background: var(--tag-bg); border: 1px solid var(--tag-b); color: var(--tag-c); padding: 0.18rem 0.55rem; border-radius: 3px; font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; cursor: pointer; transition: opacity 0.15s; }
+    .node-tag-btn:hover { opacity: 0.8; }
+    .node-tag-btn.active { outline: 1.5px solid var(--tag-c); outline-offset: 1px; }
+
+    /* Diagram search highlight */
+    .dnode.search-match rect { stroke-width: 2.5 !important; stroke: #008080 !important; }
+    .dnode.search-no-match { opacity: 0.2; }
+
+    /* Canopy Diff tab */
+    .cdiff-row { display:flex;align-items:baseline;gap:0.65rem;padding:0.42rem 0.85rem;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:0.69rem;border:1px solid var(--border); }
+    .cdiff-row.cdiff-added   { background:#0c1f10;border-color:#243d28; }
+    .cdiff-row.cdiff-removed { background:#1e0f0c;border-color:#3a1e1a; }
+    .cdiff-row.cdiff-moved   { background:#1a1008;border-color:#3a2808; }
+    .cdiff-row.cdiff-same    { background:var(--bg-card);border-color:var(--border-soft);opacity:0.55; }
+    .cdiff-badge { font-size:0.6rem;padding:0.15rem 0.45rem;border-radius:3px;flex-shrink:0;font-weight:600; }
+    .cdiff-badge-added   { background:#172a1c;color:#5aab72;border:1px solid #243d28; }
+    .cdiff-badge-removed { background:#1e0f0c;color:#c86a5a;border:1px solid #3a1e1a; }
+    .cdiff-badge-moved   { background:#1a1008;color:#c8a060;border:1px solid #3a2808; }
+    .cdiff-badge-same    { background:var(--bg);color:var(--text-muted);border:1px solid var(--border); }
+    .cdiff-url  { color:var(--text-body);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .cdiff-meta { font-size:0.63rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0; }
     .d-info-header { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; display: flex; justify-content: space-between; }
     .d-info-body { padding: 0.65rem 0.75rem; display: flex; flex-direction: column; gap: 5px; }
     .d-info-row { display: flex; justify-content: space-between; font-size: 0.68rem; }
@@ -530,6 +553,7 @@
   <div class="canopy-tabnav">
     <button class="nav-tab active" data-page="diagram" onclick="switchPage('diagram')"><span class="nav-emoji">🌳</span>Diagram</button>
     <button class="nav-tab" data-page="export" onclick="switchPage('export')"><span class="nav-emoji">🍂</span>Export</button>
+    <button class="nav-tab" data-page="diff" onclick="switchPage('diff')"><span class="nav-emoji">⚡</span>Diff</button>
   </div>
 
   <!-- ══════════════════════════════════════
@@ -549,66 +573,21 @@
 
     <div id="diagram-wrap" class="hidden">
 
-      <!-- Diagram Workbench -->
-      <div class="section-card" style="margin-bottom:0.75rem;">
-        <div class="card-header accordion" id="dwb-header" onclick="toggleAccordion('dwb-header','dwb-body')">
-          <div class="card-header-text">
-            <div class="card-title">Workbench</div>
-            <div class="accordion-help">Control depth, grouping, and display options for the diagram.</div>
-          </div>
-          <span class="accordion-toggle" id="dwb-toggle">◀</span>
-        </div>
-        <div class="accordion-body" id="dwb-body">
-          <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;flex-wrap:wrap;">
-
-            <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.4rem;">Max depth</div>
-              <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.72rem;color:var(--text-help);margin-bottom:0.6rem;line-height:1.5;">Trim the tree to a maximum depth. Useful for high-level overviews — show sections only, or sections plus one level.</div>
-              <div style="display:flex;align-items:center;gap:0.65rem;">
-                <input class="base-url-input" id="d-max-depth" type="number" min="1" max="10" value="4" style="width:60px;flex:0 0 auto;" />
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text-muted);">1 = root only &nbsp;·&nbsp; 2 = sections &nbsp;·&nbsp; 3+ = pages</span>
-              </div>
-            </div>
-
-            <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.4rem;">Collapse sections</div>
-              <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.72rem;color:var(--text-help);margin-bottom:0.6rem;line-height:1.5;">Hide the children of any section with more than this many pages. Keeps the diagram readable for large sites.</div>
-              <div style="display:flex;align-items:center;gap:0.65rem;">
-                <input class="base-url-input" id="d-collapse-threshold" type="number" min="1" max="999" value="20" style="width:60px;flex:0 0 auto;" />
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text-muted);">pages per section before collapsing</span>
-              </div>
-            </div>
-
-            <div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.4rem;">Display</div>
-              <div style="display:flex;flex-direction:column;gap:0.45rem;margin-top:0.2rem;">
-                <label class="spider-opt-row"><input type="checkbox" id="d-show-counts" checked /> <span>Show child counts on sections</span></label>
-                <label class="spider-opt-row"><input type="checkbox" id="d-show-errors" checked /> <span>Include error / blocked pages</span></label>
-              </div>
-              <div style="margin-top:0.75rem;">
-                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.35rem;">Node labels</div>
-                <div class="pill-group" id="label-mode-pills">
-                  <button class="pill active" id="lm-slug"   onclick="setLabelMode('slug',this)"  title="URL slug">slug</button>
-                  <button class="pill"        id="lm-title"  onclick="setLabelMode('title',this)" title="Page title from crawl">title</button>
-                  <button class="pill"        id="lm-custom" onclick="setLabelMode('custom',this)" title="Custom labels (edit in node panel)">custom</button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-          <div class="card-body" style="padding-top:0.75rem;border-top:1px solid var(--border-soft);margin-top:0.25rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-            <button class="btn-check" onclick="buildDiagram(true)">↺ apply &amp; re-draw</button>
-            <div class="theme-swatch-row" id="theme-swatch-row" style="margin-left:0.5rem;">
-              <button class="theme-swatch active" id="swatch-default" title="Default" style="background:linear-gradient(135deg,#1a1a24 50%,#2a2a38 50%);" onclick="setDiagramTheme('default',this)"></button>
-              <button class="theme-swatch" id="swatch-teal"    title="Teal"    style="background:linear-gradient(135deg,#001f1f 50%,#008080 50%);"  onclick="setDiagramTheme('teal',this)"></button>
-              <button class="theme-swatch" id="swatch-slate"   title="Slate"   style="background:linear-gradient(135deg,#1c1c2e 50%,#6060a0 50%);"  onclick="setDiagramTheme('slate',this)"></button>
-              <button class="theme-swatch" id="swatch-forest"  title="Forest"  style="background:linear-gradient(135deg,#0e1e12 50%,#3a7a4a 50%);"  onclick="setDiagramTheme('forest',this)"></button>
-              <button class="theme-swatch" id="swatch-ember"   title="Ember"   style="background:linear-gradient(135deg,#1e1008 50%,#a05030 50%);"  onclick="setDiagramTheme('ember',this)"></button>
-            </div>
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);" id="theme-label">Default</span>
-          </div>
+      <!-- Diagram toolbar above canvas -->
+      <div class="diagram-toolbar-row" style="margin-bottom:0.5rem;margin-top:0;">
+        <button class="btn-session" onclick="dzoom(1.2)" title="Zoom in">+</button>
+        <button class="btn-session" onclick="dzoom(0.83)" title="Zoom out">−</button>
+        <button class="btn-session" onclick="dfit()" title="Fit to view">⊡ fit</button>
+        <button class="btn-session" onclick="buildDiagram(true)" title="Re-layout">↺ re-layout</button>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);margin-left:0.5rem;">scroll to zoom &nbsp;·&nbsp; drag to pan</span>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">
+          <input class="search-input" id="diagram-search" type="text" placeholder="search nodes…" autocomplete="off" spellcheck="false" style="width:200px;" oninput="handleDiagramSearch(this.value)" />
+          <button class="btn-session" id="diagram-search-clear" style="font-size:0.65rem;padding:0.2rem 0.55rem;display:none;" onclick="clearDiagramSearch()">✕</button>
+          <span id="diagram-search-count" style="font-family:'IBM Plex Mono',monospace;font-size:0.63rem;color:var(--text-muted);display:none;white-space:nowrap;"></span>
+          <button class="btn-check" onclick="switchPage('export')">↓ export →</button>
         </div>
       </div>
+
       <div class="diagram-canvas-wrap" id="diagram-canvas">
         <svg id="diagram">
           <g id="dg" transform="translate(0,0) scale(1)">
@@ -678,21 +657,83 @@
               <div style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:0.3rem;">Note</div>
               <textarea id="d-node-annotation" class="base-url-input" rows="3" placeholder="e.g. Merging with /about in new IA" maxlength="280" style="width:100%;font-size:0.68rem;padding:0.3rem 0.5rem;resize:none;line-height:1.5;" oninput="autoSaveAnnotation()"></textarea>
             </div>
+            <!-- Status tag -->
+            <div id="d-node-tag-row" style="border-top:1px solid var(--border-soft);padding-top:0.5rem;display:none;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:0.4rem;">Status</div>
+              <div style="display:flex;flex-wrap:wrap;gap:0.3rem;" id="d-node-tag-btns">
+                <button class="node-tag-btn" data-tag="keep"     onclick="setNodeTag('keep')"    style="--tag-c:#5aab72;--tag-b:#243d28;--tag-bg:#0c1f10;">keep</button>
+                <button class="node-tag-btn" data-tag="merge"    onclick="setNodeTag('merge')"   style="--tag-c:#6a9fd8;--tag-b:#1a3050;--tag-bg:#0a1828;">merge</button>
+                <button class="node-tag-btn" data-tag="redirect" onclick="setNodeTag('redirect')" style="--tag-c:#c8a060;--tag-b:#3a2808;--tag-bg:#1a1008;">redirect</button>
+                <button class="node-tag-btn" data-tag="new"      onclick="setNodeTag('new')"     style="--tag-c:#a06ad8;--tag-b:#301848;--tag-bg:#180c28;">new</button>
+                <button class="node-tag-btn" data-tag="delete"   onclick="setNodeTag('delete')"  style="--tag-c:#c86a5a;--tag-b:#3a1e1a;--tag-bg:#1e0f0c;">delete</button>
+                <button class="node-tag-btn" data-tag=""         onclick="setNodeTag('')"        style="--tag-c:var(--text-muted);--tag-b:var(--border);--tag-bg:transparent;">none</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Diagram toolbar below canvas -->
-      <div class="diagram-toolbar-row">
-        <button class="btn-session" onclick="dzoom(1.2)" title="Zoom in">+</button>
-        <button class="btn-session" onclick="dzoom(0.83)" title="Zoom out">−</button>
-        <button class="btn-session" onclick="dfit()" title="Fit to view">⊡ fit</button>
-        <button class="btn-session" onclick="buildDiagram(true)" title="Re-layout">↺ re-layout</button>
-        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);margin-left:0.5rem;">scroll to zoom &nbsp;·&nbsp; drag to pan</span>
-        <div style="margin-left:auto;">
-          <button class="btn-check" onclick="switchPage('export')">↓ export →</button>
+      <!-- Diagram Workbench — below canvas -->
+      <div class="section-card" style="margin-top:0.75rem;">
+        <div class="card-header accordion" id="dwb-header" onclick="toggleAccordion('dwb-header','dwb-body')">
+          <div class="card-header-text">
+            <div class="card-title">Workbench</div>
+            <div class="accordion-help">Control depth, grouping, and display options for the diagram.</div>
+          </div>
+          <span class="accordion-toggle" id="dwb-toggle">◀</span>
+        </div>
+        <div class="accordion-body" id="dwb-body">
+          <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;flex-wrap:wrap;">
+
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.4rem;">Max depth</div>
+              <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.72rem;color:var(--text-help);margin-bottom:0.6rem;line-height:1.5;">Trim the tree to a maximum depth. Useful for high-level overviews — show sections only, or sections plus one level.</div>
+              <div style="display:flex;align-items:center;gap:0.65rem;">
+                <input class="base-url-input" id="d-max-depth" type="number" min="1" max="10" value="4" style="width:60px;flex:0 0 auto;" />
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text-muted);">1 = root only &nbsp;·&nbsp; 2 = sections &nbsp;·&nbsp; 3+ = pages</span>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.4rem;">Collapse sections</div>
+              <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.72rem;color:var(--text-help);margin-bottom:0.6rem;line-height:1.5;">Hide the children of any section with more than this many pages. Keeps the diagram readable for large sites.</div>
+              <div style="display:flex;align-items:center;gap:0.65rem;">
+                <input class="base-url-input" id="d-collapse-threshold" type="number" min="1" max="999" value="20" style="width:60px;flex:0 0 auto;" />
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text-muted);">pages per section before collapsing</span>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.4rem;">Display</div>
+              <div style="display:flex;flex-direction:column;gap:0.45rem;margin-top:0.2rem;">
+                <label class="spider-opt-row"><input type="checkbox" id="d-show-counts" checked /> <span>Show child counts on sections</span></label>
+                <label class="spider-opt-row"><input type="checkbox" id="d-show-errors" checked /> <span>Include error / blocked pages</span></label>
+              </div>
+              <div style="margin-top:0.75rem;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.35rem;">Node labels</div>
+                <div class="pill-group" id="label-mode-pills">
+                  <button class="pill active" id="lm-slug"   onclick="setLabelMode('slug',this)"  title="URL slug">slug</button>
+                  <button class="pill"        id="lm-title"  onclick="setLabelMode('title',this)" title="Page title from crawl">title</button>
+                  <button class="pill"        id="lm-custom" onclick="setLabelMode('custom',this)" title="Custom labels (edit in node panel)">custom</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div class="card-body" style="padding-top:0.75rem;border-top:1px solid var(--border-soft);margin-top:0.25rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <button class="btn-check" onclick="buildDiagram(true)">↺ apply &amp; re-draw</button>
+            <div class="theme-swatch-row" id="theme-swatch-row" style="margin-left:0.5rem;">
+              <button class="theme-swatch active" id="swatch-default" title="Default" style="background:linear-gradient(135deg,#1a1a24 50%,#2a2a38 50%);" onclick="setDiagramTheme('default',this)"></button>
+              <button class="theme-swatch" id="swatch-teal"    title="Teal"    style="background:linear-gradient(135deg,#001f1f 50%,#008080 50%);"  onclick="setDiagramTheme('teal',this)"></button>
+              <button class="theme-swatch" id="swatch-slate"   title="Slate"   style="background:linear-gradient(135deg,#1c1c2e 50%,#6060a0 50%);"  onclick="setDiagramTheme('slate',this)"></button>
+              <button class="theme-swatch" id="swatch-forest"  title="Forest"  style="background:linear-gradient(135deg,#0e1e12 50%,#3a7a4a 50%);"  onclick="setDiagramTheme('forest',this)"></button>
+              <button class="theme-swatch" id="swatch-ember"   title="Ember"   style="background:linear-gradient(135deg,#1e1008 50%,#a05030 50%);"  onclick="setDiagramTheme('ember',this)"></button>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);" id="theme-label">Default</span>
+          </div>
         </div>
       </div>
+
     </div>
   </div><!-- /page-diagram -->
 
@@ -762,6 +803,70 @@
     </div>
   </div><!-- /page-export -->
 
+  <!-- ══════════════════════════════════════
+       PAGE: Diff
+  ══════════════════════════════════════ -->
+  <div id="page-diff" class="hidden">
+    <div class="page-heading">
+      <div class="page-heading-title">Diff</div>
+      <div class="page-heading-sub">Compare two Canopy crawls — see what pages were added, removed, or restructured.</div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:1rem;">
+      <div class="card-header">
+        <div class="card-header-text">
+          <div class="card-title">Load snapshots</div>
+          <div class="card-help">Export two crawls as JSON from the Export tab, then load them here to compare.</div>
+        </div>
+      </div>
+      <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:0.5rem;">Snapshot A <span style="color:var(--text-dim);">— before</span></div>
+          <label class="btn-session" style="cursor:pointer;display:inline-block;">↑ load snapshot A (.json)
+            <input type="file" id="cdiff-file-a" accept=".json" hidden onchange="loadCanopyDiffFile('a',this)" />
+          </label>
+          <div id="cdiff-a-meta" style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);margin-top:0.5rem;min-height:1.2em;"></div>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:0.5rem;">Snapshot B <span style="color:var(--text-dim);">— after</span></div>
+          <label class="btn-session" style="cursor:pointer;display:inline-block;">↑ load snapshot B (.json)
+            <input type="file" id="cdiff-file-b" accept=".json" hidden onchange="loadCanopyDiffFile('b',this)" />
+          </label>
+          <div id="cdiff-b-meta" style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);margin-top:0.5rem;min-height:1.2em;"></div>
+        </div>
+      </div>
+      <div class="card-body" style="padding-top:0;display:flex;gap:0.75rem;align-items:center;">
+        <button class="btn-check" id="cdiff-run-btn" onclick="runCanopyDiff()" disabled>⚡ Compare</button>
+        <button class="btn-session" id="cdiff-clear-btn" onclick="clearCanopyDiff()" style="display:none;">✕ clear</button>
+        <span id="cdiff-status" style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--text-muted);"></span>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div id="cdiff-summary" class="hidden" style="margin-bottom:1rem;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.65rem;margin-bottom:1rem;">
+        <div class="data-card good"><div class="dc-label">Added</div><div class="dc-value" id="cdiff-count-added">0</div><div class="dc-sub">new pages in B</div></div>
+        <div class="data-card bad"><div class="dc-label">Removed</div><div class="dc-value" id="cdiff-count-removed">0</div><div class="dc-sub">in A but not in B</div></div>
+        <div class="data-card mid"><div class="dc-label">Restructured</div><div class="dc-value" id="cdiff-count-moved">0</div><div class="dc-sub">depth or section changed</div></div>
+        <div class="data-card"><div class="dc-label">Unchanged</div><div class="dc-value" id="cdiff-count-same">0</div><div class="dc-sub">identical in both</div></div>
+      </div>
+
+      <div style="margin-bottom:0.65rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text-muted);">show:</span>
+        <button class="pill active" data-cdiff-filter="all">all</button>
+        <button class="pill" data-cdiff-filter="added">added</button>
+        <button class="pill" data-cdiff-filter="removed">removed</button>
+        <button class="pill" data-cdiff-filter="moved">restructured</button>
+        <button class="pill" data-cdiff-filter="same">unchanged</button>
+        <input class="search-input" id="cdiff-search" type="text" placeholder="filter URLs…" autocomplete="off" oninput="renderCanopyDiffRows()" style="margin-left:auto;max-width:240px;" />
+      </div>
+
+      <div id="cdiff-rows" style="display:flex;flex-direction:column;gap:4px;max-height:540px;overflow-y:auto;"></div>
+    </div>
+
+    <div id="cdiff-empty" class="placeholder">load two Canopy JSON exports above, then click Compare</div>
+  </div><!-- /page-diff -->
+
 </div><!-- /app -->
 
 <!-- Modals -->
@@ -779,7 +884,7 @@
       <p style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🌳 Diagram</strong> — An interactive tree laid out by section and depth. Pan, zoom, and click any node to inspect it. Collapse branches to focus on what matters.</p>
       <p style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🍂 Export</strong> — PNG or SVG for presentations, CSV for spreadsheets, JSON for developers.</p>
       <div style="margin-top:1.25rem;">
-        <a href="https://github.com/Elleiana/Canopy" target="_blank" rel="noopener" style="color:#008080;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-decoration:none;">→ Full guide on GitHub</a>
+        <a href="https://github.com/libertymoose/Canopy" target="_blank" rel="noopener" style="color:#008080;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-decoration:none;">→ Full guide on GitHub</a>
       </div>
       <div style="margin-top:0.65rem;">
         <a href="#" style="color:#008080;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-decoration:none;" onclick="closeModal('m-about');showModal('m-alchemy');return false;">✦ Part of the Alchemy suite</a>
@@ -830,13 +935,15 @@ let selectedDNode = null;
 let customLabels  = {};
 let currentLabelMode = 'slug';
 let nodeAnnotations = {};
+let nodeStatusTags  = {};  // url → 'keep' | 'merge' | 'redirect' | 'new' | 'delete'
+let diagramSearchTerm = '';
 
 /* ── Clear ── */
 function clearCrawl() {
   if (crawlState.results.length && !confirm('Clear this crawl? This cannot be undone.')) return;
   if (crawlState.running) stopCrawl();
   crawlState = { running: false, paused: false, queue: [], visited: new Set(), results: [], base: '' };
-  excludedCount = 0; diagramTree = null; manualCollapseState = {}; hiddenNodes = {}; nodeAnnotations = {}; customLabels = {};
+  excludedCount = 0; diagramTree = null; manualCollapseState = {}; hiddenNodes = {}; nodeAnnotations = {}; customLabels = {}; nodeStatusTags = {}; diagramSearchTerm = '';
   currentLabelMode = 'slug';
   document.getElementById('crawl-url').value = '';
   const nameEl = document.getElementById('session-name');
@@ -907,7 +1014,7 @@ function setDiagramTheme(theme, btn) {
 /* ═══════════════════════════════════════════
    Navigation
 ═══════════════════════════════════════════ */
-const ALL_PAGES = ['diagram','export'];
+const ALL_PAGES = ['diagram','export','diff'];
 
 function switchPage(name) {
   ALL_PAGES.forEach(p => {
@@ -1726,6 +1833,20 @@ function renderDiagram(showCounts, resetView) {
       g.appendChild(dot);
     }
 
+    // Status tag — coloured left border strip
+    const TAG_COLOURS = { keep:'#5aab72', merge:'#6a9fd8', redirect:'#c8a060', new:'#a06ad8', delete:'#c86a5a' };
+    const tag = nodeStatusTags[n.url || ''];
+    if (!n.isRoot && tag && TAG_COLOURS[tag]) {
+      const strip = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      strip.setAttribute('width', 4);
+      strip.setAttribute('height', h);
+      strip.setAttribute('rx', 2);
+      strip.setAttribute('ry', 2);
+      strip.style.fill = TAG_COLOURS[tag];
+      strip.style.pointerEvents = 'none';
+      g.appendChild(strip);
+    }
+
     // Child count sub-label (visible, expanded sections only)
     if (!n.collapsed && showCounts && n.isSection && n.children.length > 0) {
       const sub = document.createElementNS('http://www.w3.org/2000/svg','text');
@@ -1846,8 +1967,9 @@ function renderDiagram(showCounts, resetView) {
       });
     }
 
-    // Register in map
+    // Register in map (by node object AND by URL for tag lookups)
     nodeElemMap.set(n, g);
+    if (n.url) nodeElemMap.set(n.url, g);
 
     // Hover tooltip — shows full URL path
     g.addEventListener('mouseenter', e => {
@@ -1902,6 +2024,26 @@ function renderDiagram(showCounts, resetView) {
       }
     });
   }
+
+  // Re-apply search highlighting if a search is active
+  if (diagramSearchTerm) handleDiagramSearch(diagramSearchTerm);
+
+  // Update legend to show active status tags
+  updateStatusTagLegend();
+}
+
+function updateStatusTagLegend() {
+  const legend = document.getElementById('d-legend');
+  if (!legend) return;
+  legend.querySelectorAll('.legend-tag-item').forEach(el => el.remove());
+  const TAG_COLOURS = { keep:'#5aab72', merge:'#6a9fd8', redirect:'#c8a060', new:'#a06ad8', delete:'#c86a5a' };
+  const activeTags = [...new Set(Object.values(nodeStatusTags))].filter(t => TAG_COLOURS[t]);
+  activeTags.forEach(tag => {
+    const item = document.createElement('div');
+    item.className = 'legend-item legend-tag-item';
+    item.innerHTML = `<div class="legend-box" style="background:${TAG_COLOURS[tag]}22;border-color:${TAG_COLOURS[tag]};"></div>${tag}`;
+    legend.appendChild(item);
+  });
 }
 
 function applyDt() {
@@ -1987,6 +2129,16 @@ function showNodePanel(n) {
     annotInput.value = nodeAnnotations[n.url || ''] || '';
   }
 
+  // Status tag — shown for all non-root nodes
+  const tagRow = document.getElementById('d-node-tag-row');
+  if (tagRow) {
+    tagRow.style.display = n.isRoot ? 'none' : '';
+    const currentTag = nodeStatusTags[n.url || ''] || '';
+    document.querySelectorAll('.node-tag-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tag === currentTag);
+    });
+  }
+
   panel.classList.remove('hidden');
 }
 
@@ -1999,6 +2151,73 @@ function autoSaveAnnotation() {
   } else {
     delete nodeAnnotations[url];
   }
+}
+
+function setNodeTag(tag) {
+  if (!selectedDNode) return;
+  const url = selectedDNode.url || '';
+  if (tag) {
+    nodeStatusTags[url] = tag;
+  } else {
+    delete nodeStatusTags[url];
+  }
+  // Update button active states
+  document.querySelectorAll('.node-tag-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tag === tag);
+  });
+  // Redraw just the affected node without full rebuild
+  const el = nodeElemMap.get(url);
+  if (el) {
+    const TAG_COLOURS = { keep:'#5aab72', merge:'#6a9fd8', redirect:'#c8a060', new:'#a06ad8', delete:'#c86a5a' };
+    // Remove existing strip
+    el.querySelectorAll('.tag-strip').forEach(s => s.remove());
+    if (tag && TAG_COLOURS[tag]) {
+      const h = selectedDNode.isRoot ? 36 : 30;
+      const strip = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      strip.setAttribute('class','tag-strip');
+      strip.setAttribute('width', 4);
+      strip.setAttribute('height', h);
+      strip.setAttribute('rx', 2);
+      strip.setAttribute('ry', 2);
+      strip.style.fill = TAG_COLOURS[tag];
+      strip.style.pointerEvents = 'none';
+      el.appendChild(strip);
+    }
+  }
+}
+
+function handleDiagramSearch(val) {
+  diagramSearchTerm = val.trim().toLowerCase();
+  const clearBtn   = document.getElementById('diagram-search-clear');
+  const countEl    = document.getElementById('diagram-search-count');
+  if (!diagramSearchTerm) {
+    clearDiagramSearch();
+    return;
+  }
+  clearBtn.style.display  = '';
+  // Apply match/no-match classes to all dnodes
+  const all = document.querySelectorAll('.dnode');
+  let matches = 0;
+  all.forEach(el => {
+    const url = (el.dataset.url || '').toLowerCase();
+    const isMatch = url.includes(diagramSearchTerm);
+    el.classList.toggle('search-match',   isMatch);
+    el.classList.toggle('search-no-match', !isMatch);
+    if (isMatch) matches++;
+  });
+  countEl.style.display = '';
+  countEl.textContent   = matches + ' match' + (matches !== 1 ? 'es' : '');
+}
+
+function clearDiagramSearch() {
+  diagramSearchTerm = '';
+  const input  = document.getElementById('diagram-search');
+  if (input) input.value = '';
+  document.getElementById('diagram-search-clear').style.display = 'none';
+  document.getElementById('diagram-search-count').style.display = 'none';
+  document.querySelectorAll('.dnode').forEach(el => {
+    el.classList.remove('search-match','search-no-match');
+  });
 }
 
 function clearNodePanel() {
@@ -2492,7 +2711,7 @@ function sendToWaypoint() {
   const encoded = encodeURIComponent(urlList);
   // Open Waypoint — it will pick up ?oldurls= on load if supported,
   // otherwise fall back to copying to clipboard with instructions
-  const waypointUrl = `https://elleiana.github.io/Waypoint/?oldurls=${encoded}`;
+  const waypointUrl = `https://libertymoose.github.io/Waypoint/?oldurls=${encoded}`;
   if (waypointUrl.length < 8000) {
     window.open(waypointUrl, '_blank', 'noopener');
   } else {
@@ -2517,7 +2736,7 @@ function openInScout() {
   }
   let origin = url;
   try { origin = new URL(url).origin; } catch(e) {}
-  window.open(`https://elleiana.github.io/Scout/?url=${encodeURIComponent(origin)}`, '_blank', 'noopener');
+  window.open(`https://libertymoose.github.io/Scout/?url=${encodeURIComponent(origin)}`, '_blank', 'noopener');
   msg.innerHTML = '<span style="color:#5aab72;">✓ Opening Scout with ' + origin + '</span>';
 }
 
@@ -2634,6 +2853,147 @@ window.clearSearch      = clearSearch;
 window.copyURLs         = copyURLs;
 window.sendToWaypoint   = sendToWaypoint;
 window.previewCustomLabel = previewCustomLabel;
+window.setNodeTag         = setNodeTag;
+window.handleDiagramSearch = handleDiagramSearch;
+window.clearDiagramSearch  = clearDiagramSearch;
+
+/* ═══════════════════════════════════════════
+   Canopy Diff — snapshot comparison
+═══════════════════════════════════════════ */
+const canopyDiffState = { a: null, b: null, results: [], filter: 'all' };
+
+function loadCanopyDiffFile(slot, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const urls = parsed.urls || [];
+      canopyDiffState[slot] = { name: file.name, urls };
+      const metaEl = document.getElementById('cdiff-' + slot + '-meta');
+      if (metaEl) metaEl.textContent = urls.length + ' URL' + (urls.length !== 1 ? 's' : '') + ' · ' + (parsed.crawledAt ? new Date(parsed.crawledAt).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : file.name);
+    } catch {
+      const metaEl = document.getElementById('cdiff-' + slot + '-meta');
+      if (metaEl) metaEl.textContent = '⚠ Invalid file — use Canopy JSON export';
+      return;
+    }
+    document.getElementById('cdiff-run-btn').disabled = !(canopyDiffState.a && canopyDiffState.b);
+  };
+  reader.readAsText(file);
+}
+
+function runCanopyDiff() {
+  const { a, b } = canopyDiffState;
+  if (!a || !b) return;
+
+  const mapA = new Map(a.urls.map(r => [r.url, r]));
+  const mapB = new Map(b.urls.map(r => [r.url, r]));
+  const results = [];
+
+  // Added: in B not in A
+  mapB.forEach((r, url) => {
+    if (!mapA.has(url)) results.push({ url, statusA: null, statusB: r, kind: 'added' });
+  });
+
+  // Removed or restructured: in A
+  mapA.forEach((r, url) => {
+    if (!mapB.has(url)) {
+      results.push({ url, statusA: r, statusB: null, kind: 'removed' });
+    } else {
+      const rB = mapB.get(url);
+      // Restructured: depth or section changed
+      const depthChanged   = r.depth !== rB.depth;
+      const sectionChanged = r.section !== rB.section;
+      if (depthChanged || sectionChanged) {
+        results.push({ url, statusA: r, statusB: rB, kind: 'moved', depthChanged, sectionChanged });
+      } else {
+        results.push({ url, statusA: r, statusB: rB, kind: 'same' });
+      }
+    }
+  });
+
+  // Sort: added → removed → moved → same, then alphabetically
+  const order = { added: 0, removed: 1, moved: 2, same: 3 };
+  results.sort((x, y) => order[x.kind] - order[y.kind] || x.url.localeCompare(y.url));
+  canopyDiffState.results = results;
+
+  document.getElementById('cdiff-count-added').textContent   = results.filter(r => r.kind==='added').length;
+  document.getElementById('cdiff-count-removed').textContent = results.filter(r => r.kind==='removed').length;
+  document.getElementById('cdiff-count-moved').textContent   = results.filter(r => r.kind==='moved').length;
+  document.getElementById('cdiff-count-same').textContent    = results.filter(r => r.kind==='same').length;
+
+  document.getElementById('cdiff-summary').classList.remove('hidden');
+  document.getElementById('cdiff-empty').classList.add('hidden');
+  document.getElementById('cdiff-clear-btn').style.display = '';
+  document.getElementById('cdiff-status').textContent = a.name + ' → ' + b.name;
+  renderCanopyDiffRows();
+}
+
+function renderCanopyDiffRows() {
+  const q = (document.getElementById('cdiff-search')?.value || '').toLowerCase();
+  const f = canopyDiffState.filter;
+  const rows = canopyDiffState.results.filter(r => {
+    if (f !== 'all' && r.kind !== f) return false;
+    if (q) return r.url.toLowerCase().includes(q);
+    return true;
+  });
+
+  const container = document.getElementById('cdiff-rows');
+  if (!container) return;
+  if (!rows.length) { container.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.72rem;color:var(--text-dim);padding:1.5rem;text-align:center;">no rows match this filter</div>'; return; }
+  container.innerHTML = '';
+
+  rows.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'cdiff-row cdiff-' + r.kind;
+    const badge = `<span class="cdiff-badge cdiff-badge-${r.kind}">${r.kind === 'moved' ? 'restructured' : r.kind}</span>`;
+    const urlEl = `<span class="cdiff-url" title="${esc(r.url)}">${esc(r.url)}</span>`;
+    let meta = '';
+    if (r.kind === 'added')   meta = `<span class="cdiff-meta">depth ${r.statusB.depth} · ${esc(r.statusB.section||'/')}</span>`;
+    if (r.kind === 'removed') meta = `<span class="cdiff-meta">was depth ${r.statusA.depth} · ${esc(r.statusA.section||'/')}</span>`;
+    if (r.kind === 'moved') {
+      const parts = [];
+      if (r.depthChanged)   parts.push('depth ' + r.statusA.depth + ' → ' + r.statusB.depth);
+      if (r.sectionChanged) parts.push(esc(r.statusA.section||'/') + ' → ' + esc(r.statusB.section||'/'));
+      meta = `<span class="cdiff-meta">${parts.join(' · ')}</span>`;
+    }
+    div.innerHTML = badge + urlEl + meta;
+    container.appendChild(div);
+  });
+}
+
+function clearCanopyDiff() {
+  canopyDiffState.a = null; canopyDiffState.b = null;
+  canopyDiffState.results = []; canopyDiffState.filter = 'all';
+  ['a','b'].forEach(s => {
+    const meta  = document.getElementById('cdiff-' + s + '-meta');
+    const input = document.getElementById('cdiff-file-' + s);
+    if (meta)  meta.textContent = '';
+    if (input) input.value = '';
+  });
+  document.getElementById('cdiff-summary').classList.add('hidden');
+  document.getElementById('cdiff-empty').classList.remove('hidden');
+  document.getElementById('cdiff-clear-btn').style.display = 'none';
+  document.getElementById('cdiff-run-btn').disabled = true;
+  document.getElementById('cdiff-status').textContent = '';
+  // Reset filter pills
+  document.querySelectorAll('[data-cdiff-filter]').forEach(b => b.classList.toggle('active', b.dataset.cdiffFilter === 'all'));
+}
+
+// Diff filter pills
+document.querySelectorAll('[data-cdiff-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    canopyDiffState.filter = btn.dataset.cdiffFilter;
+    document.querySelectorAll('[data-cdiff-filter]').forEach(b => b.classList.toggle('active', b.dataset.cdiffFilter === canopyDiffState.filter));
+    renderCanopyDiffRows();
+  });
+});
+
+// Expose diff functions on window for HTML attribute handlers
+window.loadCanopyDiffFile = loadCanopyDiffFile;
+window.runCanopyDiff      = runCanopyDiff;
+window.clearCanopyDiff    = clearCanopyDiff;
 
 return { init };
 
@@ -2650,11 +3010,11 @@ return { init };
       <p>Alchemy is a suite of browser-based tools for website discovery, auditing, and migration. No installs, no logins, no spreadsheets. Each tool does one thing well - together they cover the whole journey.</p>
       <div class="modal-st" style="margin-top:0.85rem;">The tools</div>
 
-      <p style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🔍 Scout</strong> — Point it at any URL and Scout runs eight automated checks: Lighthouse scores, security headers, sitemap analysis, tech stack detection, DNS records, accessibility, GDPR compliance, and readability. Add your findings and export a client-ready report. <a href="https://elleiana.github.io/Scout/" target="_blank" rel="noopener" style="color:#008080;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-decoration:none;">→ Open Scout</a></p>
+      <p style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🔍 Scout</strong> — Point it at any URL and Scout runs eight automated checks: Lighthouse scores, security headers, sitemap analysis, tech stack detection, DNS records, accessibility, GDPR compliance, and readability. Add your findings and export a client-ready report. <a href="https://libertymoose.github.io/Scout/" target="_blank" rel="noopener" style="color:#008080;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-decoration:none;">→ Open Scout</a></p>
 
-      <p style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🌿 Canopy</strong> — Crawls a live website and maps every internal URL into an interactive tree diagram. Explore the architecture by section and depth, export as PNG, SVG, CSV, or JSON. <a href="https://elleiana.github.io/Canopy/" target="_blank" rel="noopener" style="color:#008080;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-decoration:none;">→ Open Canopy</a></p>
+      <p style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🌿 Canopy</strong> — Crawls a live website and maps every internal URL into an interactive tree diagram. Explore the architecture by section and depth, export as PNG, SVG, CSV, or JSON. <a href="https://libertymoose.github.io/Canopy/" target="_blank" rel="noopener" style="color:#008080;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-decoration:none;">→ Open Canopy</a></p>
 
-      <p style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🧭 Waypoint</strong> — Takes old and new URL lists, suggests redirect matches, catches loops and chains, and exports a developer-ready map in CSV, .htaccess, or Nginx format. The last step before a site goes live. <a href="https://elleiana.github.io/Waypoint/" target="_blank" rel="noopener" style="color:#008080;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-decoration:none;">→ Open Waypoint</a></p>
+      <p style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🧭 Waypoint</strong> — Takes old and new URL lists, suggests redirect matches, catches loops and chains, and exports a developer-ready map in CSV, .htaccess, or Nginx format. The last step before a site goes live. <a href="https://libertymoose.github.io/Waypoint/" target="_blank" rel="noopener" style="color:#008080;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;text-decoration:none;">→ Open Waypoint</a></p>
     </div>
   </div>
 </div>

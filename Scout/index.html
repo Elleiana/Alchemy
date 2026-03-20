@@ -211,6 +211,25 @@
     .data-card.bad .dc-value { color: #c86a5a; }
     html.light .data-card.bad .dc-value { color: #8a2020; }
 
+    /* ── Social preview cards ── */
+    .social-preview { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; max-width: 480px; margin-bottom: 0.5rem; font-family: 'IBM Plex Sans', sans-serif; background: var(--bg-card); }
+    .google-preview { padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
+    .sp-site-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.1rem; }
+    .sp-favicon { width: 18px; height: 18px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+    .sp-site-info { display: flex; flex-direction: column; gap: 0; }
+    .sp-site-name { font-size: 0.72rem; color: var(--text-body); line-height: 1.2; }
+    .sp-breadcrumb { font-size: 0.65rem; color: var(--text-muted); }
+    .sp-title { font-size: 0.88rem; color: #8ab4f8; font-weight: 500; line-height: 1.3; }
+    html.light .sp-title { color: #1a0dab; }
+    .sp-desc { font-size: 0.72rem; color: var(--text-body); line-height: 1.5; }
+    .share-preview { display: flex; flex-direction: column; }
+    .sp-img-placeholder { background: var(--bg-input); border-bottom: 1px solid var(--border); height: 72px; display: flex; align-items: center; justify-content: center; }
+    .sp-img-missing { background: repeating-linear-gradient(45deg, var(--bg) 0, var(--bg) 6px, var(--bg-input) 6px, var(--bg-input) 12px); }
+    .sp-card-body { padding: 0.65rem 0.85rem; display: flex; flex-direction: column; gap: 0.2rem; }
+    .sp-card-domain { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .sp-card-title { font-size: 0.78rem; color: var(--text-title); font-weight: 600; line-height: 1.3; }
+    .sp-card-desc { font-size: 0.68rem; color: var(--text-body); line-height: 1.5; }
+
     /* ── score rings ── */
     .score-rings { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.85rem; align-items: flex-end; }
     .score-ring-wrap { text-align: center; }
@@ -897,6 +916,8 @@ async function startAudit(url, clientName) {
   document.getElementById('audit-url-pill').textContent=S.url;
   document.getElementById('perf-auto').innerHTML='<div class="skeleton" style="height:70px;border-radius:5px;"></div>';
   document.getElementById('a11y-auto').innerHTML='<div class="skeleton" style="height:50px;border-radius:5px;"></div>';
+  S.raw.axe = undefined;
+  S.raw.hreflang = undefined;
   document.getElementById('security-auto').innerHTML='<div class="skeleton" style="height:90px;border-radius:5px;"></div>';
   document.getElementById('integrations-auto').innerHTML='';
   document.getElementById('content-auto').innerHTML='';
@@ -960,14 +981,16 @@ const FACTS = [
 
 // ── checks ──
 const CHECKS=[
-  {id:'psi',   label:'PageSpeed',         fn:function(){startPsiSlowIndicator();return runPSI('desktop').then(function(){return sleep(2000);}).then(function(){return runPSI('mobile');}).then(function(){stopPsiSlowIndicator();}).catch(function(e){stopPsiSlowIndicator();throw e;});}},
-  {id:'obs',   label:'Security',          fn:runSecHeaders   },
-  {id:'smap',  label:'Sitemap',           fn:runSitemap      },
-  {id:'rob',   label:'Robots.txt',        fn:runRobots       },
-  {id:'trk',   label:'Trackers',          fn:runTrackers     },
-  {id:'tech',  label:'Tech stack',        fn:runTechStack    },
-  {id:'dns',   label:'DNS',               fn:runDNS          },
-  {id:'canon', label:'Canonical',         fn:runCanonical    },
+  {id:'psi',      label:'PageSpeed',         fn:function(){startPsiSlowIndicator();return runPSI('desktop').then(function(){return sleep(2000);}).then(function(){return runPSI('mobile');}).then(function(){stopPsiSlowIndicator();}).catch(function(e){stopPsiSlowIndicator();throw e;});}},
+  {id:'obs',      label:'Security',          fn:runSecHeaders   },
+  {id:'smap',     label:'Sitemap',           fn:runSitemap      },
+  {id:'rob',      label:'Robots.txt',        fn:runRobots       },
+  {id:'trk',      label:'Trackers',          fn:runTrackers     },
+  {id:'tech',     label:'Tech stack',        fn:runTechStack    },
+  {id:'dns',      label:'DNS',               fn:runDNS          },
+  {id:'canon',    label:'Canonical',         fn:runCanonical    },
+  {id:'axe',      label:'Accessibility+',    fn:runAxe          },
+  {id:'hreflang', label:'Hreflang',          fn:runHreflang     },
 ];
 async function runChecks() {
   const g=document.getElementById('checks-grid'); g.innerHTML='';
@@ -1971,7 +1994,37 @@ async function runTechStack(){
       ogHtml+='<div class="data-card '+(ogImg?'good':'bad')+'"><div class="dc-label">og:image</div><div class="dc-value">'+(ogImg?'✓':'✗')+'</div><div class="dc-sub">'+(ogImg?'present':'missing')+'</div></div>';
       ogHtml+='<div class="data-card '+(twCard?'good':'mid')+'"><div class="dc-label">Twitter card</div><div class="dc-value">'+(twCard?'✓':'✗')+'</div><div class="dc-sub">'+(twCard?'present':'not set')+'</div></div>';
       ogHtml+='</div>';
-      ogHtml+='<div class="field-label-sm" style="margin-bottom:0.4rem;">Structured data / Schema.org</div>';
+
+      // ── Social preview mockups ──────────────────────────────────────────
+      var previewTitle = ogTitle ? esc(ogTitle[1]) : '<span style="color:var(--text-dim);font-style:italic;">og:title missing</span>';
+      var previewDesc  = ogDesc  ? esc(ogDesc[1].slice(0,160)+(ogDesc[1].length>160?'…':'')) : (metaDescText ? esc(metaDescText.slice(0,160)+(metaDescText.length>160?'…':'')) : '<span style="color:var(--text-dim);font-style:italic;">no description</span>');
+      var domain = '';
+      try { domain = new URL(S.url).hostname; } catch {}
+
+      // Google result preview
+      ogHtml += '<div class="field-label-sm" style="margin-bottom:0.5rem;">Search result preview</div>';
+      ogHtml += '<div class="social-preview google-preview">';
+      ogHtml += '<div class="sp-site-row"><div class="sp-favicon"></div><div class="sp-site-info"><div class="sp-site-name">'+esc(S.client||domain)+'</div><div class="sp-breadcrumb">'+esc(domain)+'</div></div></div>';
+      ogHtml += '<div class="sp-title">'+(ogTitle ? esc(ogTitle[1].slice(0,60)+(ogTitle[1].length>60?'…':'')) : '<span style="color:var(--text-dim);font-style:italic;">no title</span>')+'</div>';
+      ogHtml += '<div class="sp-desc">'+previewDesc+'</div>';
+      ogHtml += '</div>';
+
+      // Social share card preview
+      ogHtml += '<div class="field-label-sm" style="margin-bottom:0.5rem;margin-top:0.85rem;">Social share card preview</div>';
+      ogHtml += '<div class="social-preview share-preview">';
+      if (ogImg) {
+        ogHtml += '<div class="sp-img-placeholder"><span style="font-size:0.65rem;color:var(--text-muted);">og:image present — image will appear here</span></div>';
+      } else {
+        ogHtml += '<div class="sp-img-placeholder sp-img-missing"><span style="font-size:0.65rem;color:var(--text-dim);">no og:image — card will show without image</span></div>';
+      }
+      ogHtml += '<div class="sp-card-body">';
+      ogHtml += '<div class="sp-card-domain">'+esc(domain.toUpperCase())+'</div>';
+      ogHtml += '<div class="sp-card-title">'+(ogTitle ? esc(ogTitle[1].slice(0,70)+(ogTitle[1].length>70?'…':'')) : '<span style="color:var(--text-dim);font-style:italic;">no title</span>')+'</div>';
+      ogHtml += '<div class="sp-card-desc">'+previewDesc+'</div>';
+      ogHtml += '</div></div>';
+      // ── end social previews ─────────────────────────────────────────────
+
+      ogHtml+='<div class="field-label-sm" style="margin-bottom:0.4rem;margin-top:0.85rem;">Structured data / Schema.org</div>';
       ogHtml+='<div class="data-grid" style="margin-bottom:0.75rem;">';
       ogHtml+='<div class="data-card '+(hasSchema?'good':'mid')+'"><div class="dc-label">JSON-LD schema</div><div class="dc-value">'+(hasSchema?'✓':'✗')+'</div><div class="dc-sub">'+(hasSchema?'present':'not detected')+'</div></div>';
       if(schemaTypes.length) ogHtml+='<div class="data-card good"><div class="dc-label">Schema types</div><div class="dc-value" style="font-size:0.72rem;">'+esc(schemaTypes.slice(0,3).join(', '))+'</div><div class="dc-sub">'+schemaTypes.length+' type'+(schemaTypes.length>1?'s':'')+'</div></div>';
@@ -2056,6 +2109,188 @@ async function runDNS(){
     else if(dmarcPolicy==='none') autoFinding(flSec,'DMARC policy set to "none"','DMARC is present but p=none means no action is taken on failing emails. Change to p=quarantine or p=reject for meaningful protection.','mid',['security','email','dns']);
 
   }catch(e){/* silent — DNS check best-effort */}
+}
+
+// ── axe-core accessibility scan ───────────────────────────────────────────────
+async function runAxe(){
+  // axe requires same-origin DOM access, so we inject it into a blob-URL iframe
+  // containing the fetched page HTML, then postMessage results back.
+  const html = S.raw.html;
+  if(!html){ S.raw.axe=null; return; }
+
+  const AXE_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.9.1/axe.min.js';
+
+  // Build a self-contained page that runs axe and posts results
+  const iframeDoc = `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <script src="${AXE_CDN}"><\/script>
+    <base href="${esc(S.url)}">
+  </head><body>
+  ${html.replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<base[^>]*>/gi,'')}
+  <script>
+    window.addEventListener('load',function(){
+      try{
+        axe.run(document,{
+          runOnly:{type:'tag',values:['wcag2a','wcag2aa','best-practice']},
+          resultTypes:['violations','incomplete']
+        }).then(function(r){
+          parent.postMessage({type:'axe-results',violations:r.violations,incomplete:r.incomplete},'*');
+        }).catch(function(e){
+          parent.postMessage({type:'axe-error',msg:e.message},'*');
+        });
+      }catch(e){
+        parent.postMessage({type:'axe-error',msg:e.message},'*');
+      }
+    });
+  <\/script>
+  </body></html>`;
+
+  return new Promise(function(resolve){
+    const timeout = setTimeout(function(){ cleanup(); resolve(); }, 18000);
+
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;width:1280px;height:900px;left:-9999px;top:-9999px;visibility:hidden;border:none;';
+    iframe.setAttribute('sandbox','allow-scripts allow-same-origin');
+
+    function onMessage(e){
+      if(!e.data || (e.data.type !== 'axe-results' && e.data.type !== 'axe-error')) return;
+      cleanup();
+      if(e.data.type === 'axe-results'){
+        S.raw.axe = { violations: e.data.violations, incomplete: e.data.incomplete };
+        renderAxeResults(e.data.violations, e.data.incomplete);
+      } else {
+        S.raw.axe = { error: e.data.msg };
+      }
+      resolve();
+    }
+
+    function cleanup(){
+      clearTimeout(timeout);
+      window.removeEventListener('message', onMessage);
+      if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    }
+
+    window.addEventListener('message', onMessage);
+    const blob = new Blob([iframeDoc], {type:'text/html'});
+    iframe.src = URL.createObjectURL(blob);
+    document.body.appendChild(iframe);
+  });
+}
+
+function renderAxeResults(violations, incomplete){
+  const fl = document.getElementById('fl-a11y');
+  if(!violations) return;
+
+  // Severity mapping from axe impact to Scout severity
+  const impactMap = {critical:'high', serious:'high', moderate:'mid', minor:'low'};
+
+  // Surface violations as findings
+  violations.forEach(function(v){
+    const sev = impactMap[v.impact] || 'mid';
+    const nodeCount = v.nodes ? v.nodes.length : 0;
+    const detail = nodeCount > 0 ? ' (' + nodeCount + ' instance' + (nodeCount!==1?'s':'') + ')' : '';
+    autoFinding(fl, 'axe: ' + v.help + detail, v.description + ' — ' + v.helpUrl, sev, ['accessibility','wcag','axe']);
+  });
+
+  // Build axe summary block
+  const critCount  = violations.filter(function(v){return v.impact==='critical'||v.impact==='serious';}).length;
+  const modCount   = violations.filter(function(v){return v.impact==='moderate';}).length;
+  const minorCount = violations.filter(function(v){return v.impact==='minor';}).length;
+  const incCount   = incomplete ? incomplete.length : 0;
+  const totalNodes = violations.reduce(function(n,v){return n+(v.nodes?v.nodes.length:0);},0);
+
+  const cl = violations.length===0 ? 'good' : critCount>0 ? 'bad' : 'mid';
+
+  let axeHtml = '<div class="field-label-sm" style="margin-bottom:0.4rem;margin-top:0.85rem;">axe-core scan <span style="font-size:0.6rem;color:var(--text-muted);">WCAG 2.0/2.1 A + AA</span></div>';
+  axeHtml += '<div class="data-grid" style="margin-bottom:0.75rem;">';
+  axeHtml += '<div class="data-card '+cl+'"><div class="dc-label">Violations</div><div class="dc-value">'+violations.length+'</div><div class="dc-sub">'+(violations.length===0?'none found':totalNodes+' instance'+(totalNodes!==1?'s':''))+'</div></div>';
+  if(critCount>0)  axeHtml += '<div class="data-card bad"><div class="dc-label">Critical / serious</div><div class="dc-value">'+critCount+'</div><div class="dc-sub">high priority</div></div>';
+  if(modCount>0)   axeHtml += '<div class="data-card mid"><div class="dc-label">Moderate</div><div class="dc-value">'+modCount+'</div><div class="dc-sub">medium priority</div></div>';
+  if(incCount>0)   axeHtml += '<div class="data-card mid"><div class="dc-label">Needs review</div><div class="dc-value">'+incCount+'</div><div class="dc-sub">manual check needed</div></div>';
+  axeHtml += '</div>';
+
+  if(violations.length > 0){
+    axeHtml += '<div style="margin-bottom:0.85rem;"><div class="field-label-sm" style="margin-bottom:0.4rem;">Violations detail</div>';
+    axeHtml += '<table class="detail-table"><thead><tr><th>Rule</th><th>Impact</th><th>Instances</th></tr></thead><tbody>';
+    violations.forEach(function(v){
+      const impCl = (v.impact==='critical'||v.impact==='serious')?'td-fail':(v.impact==='moderate'?'':'');
+      axeHtml += '<tr><td><a href="'+esc(v.helpUrl)+'" target="_blank" rel="noopener" style="color:#008080;text-decoration:none;">'+esc(v.help)+'</a></td>';
+      axeHtml += '<td class="'+impCl+'">'+esc(v.impact||'—')+'</td>';
+      axeHtml += '<td>'+(v.nodes?v.nodes.length:0)+'</td></tr>';
+    });
+    axeHtml += '</tbody></table></div>';
+  }
+
+  // Append after existing a11y content
+  const el = document.getElementById('a11y-auto');
+  if(el) el.innerHTML += axeHtml;
+  S.raw._axeViolations = violations.length;
+}
+
+// ── Hreflang check ────────────────────────────────────────────────────────────
+async function runHreflang(){
+  const html = S.raw.html;
+  // hreflang is only meaningful for multi-language / multi-region sites
+  // Detect all hreflang tags; if none, show a clean "not implemented" state
+  const tags = [];
+  const re = /<link[^>]+rel=["']alternate["'][^>]*>/gi;
+  var match;
+  while((match = re.exec(html || '')) !== null){
+    const tag = match[0];
+    const hlMatch = tag.match(/hreflang=["']([^"']+)["']/i);
+    const hrefMatch = tag.match(/href=["']([^"']+)["']/i);
+    if(hlMatch && hrefMatch){
+      tags.push({ lang: hlMatch[1], href: hrefMatch[1] });
+    }
+  }
+
+  S.raw.hreflang = tags;
+
+  const flContent = document.getElementById('fl-content');
+  let html2 = '<div class="field-label-sm" style="margin-bottom:0.4rem;margin-top:0.85rem;">Hreflang</div>';
+
+  if(tags.length === 0){
+    html2 += '<div class="data-grid" style="margin-bottom:0.75rem;">';
+    html2 += '<div class="data-card"><div class="dc-label">Hreflang tags</div><div class="dc-value" style="color:var(--text-muted);">none</div><div class="dc-sub">not implemented</div></div>';
+    html2 += '</div>';
+    const contentEl = document.getElementById('content-auto');
+    if(contentEl) contentEl.innerHTML += html2;
+    return;
+  }
+
+  // Validate: check for x-default, self-referencing canonical, duplicate langs
+  const hasSelf = tags.some(function(t){
+    try{ return new URL(t.href).href === new URL(S.url).href; } catch{ return false; }
+  });
+  const hasXDefault = tags.some(function(t){ return t.lang.toLowerCase() === 'x-default'; });
+  const langs = tags.map(function(t){ return t.lang.toLowerCase(); });
+  const dupLangs = langs.filter(function(l,i){ return langs.indexOf(l) !== i; });
+
+  // Score card
+  const allOk = hasSelf && hasXDefault && dupLangs.length === 0;
+  const cl = allOk ? 'good' : (!hasSelf || dupLangs.length > 0) ? 'bad' : 'mid';
+
+  html2 += '<div class="data-grid" style="margin-bottom:0.75rem;">';
+  html2 += '<div class="data-card '+cl+'"><div class="dc-label">Hreflang tags</div><div class="dc-value">'+tags.length+'</div><div class="dc-sub">'+[...new Set(langs.filter(function(l){return l!=='x-default';}))].length+' language'+(langs.length!==1?'s':'')+' detected</div></div>';
+  html2 += '<div class="data-card '+(hasSelf?'good':'bad')+'"><div class="dc-label">Self-reference</div><div class="dc-value">'+(hasSelf?'✓':'✗')+'</div><div class="dc-sub">'+(hasSelf?'present':'missing')+'</div></div>';
+  html2 += '<div class="data-card '+(hasXDefault?'good':'mid')+'"><div class="dc-label">x-default</div><div class="dc-value">'+(hasXDefault?'✓':'✗')+'</div><div class="dc-sub">'+(hasXDefault?'present':'not set')+'</div></div>';
+  if(dupLangs.length>0) html2 += '<div class="data-card bad"><div class="dc-label">Duplicate langs</div><div class="dc-value">'+dupLangs.length+'</div><div class="dc-sub">'+esc([...new Set(dupLangs)].join(', '))+'</div></div>';
+  html2 += '</div>';
+
+  // Tag table
+  html2 += '<div style="margin-bottom:0.85rem;"><table class="detail-table"><thead><tr><th>Lang</th><th>URL</th></tr></thead><tbody>';
+  tags.slice(0,20).forEach(function(t){
+    html2 += '<tr><td style="white-space:nowrap;font-weight:600;">'+esc(t.lang)+'</td><td style="font-size:0.65rem;word-break:break-all;">'+esc(t.href)+'</td></tr>';
+  });
+  if(tags.length > 20) html2 += '<tr><td colspan="2" style="color:var(--text-muted);">…and '+(tags.length-20)+' more</td></tr>';
+  html2 += '</tbody></table></div>';
+
+  // Raise findings
+  if(!hasSelf)         autoFinding(flContent, 'Hreflang: missing self-referencing tag', 'Every page with hreflang should include a tag pointing to itself. The current page URL was not found in the hreflang set.', 'high', ['seo','hreflang','international']);
+  if(!hasXDefault)     autoFinding(flContent, 'Hreflang: no x-default tag', 'x-default indicates the fallback page for users whose language isn\'t explicitly targeted. It\'s best practice to always include it.', 'mid', ['seo','hreflang','international']);
+  if(dupLangs.length>0) autoFinding(flContent, 'Hreflang: duplicate language codes', 'Duplicate hreflang lang values found: '+[...new Set(dupLangs)].join(', ')+'. Each language/region combination should appear only once.', 'high', ['seo','hreflang','international']);
+
+  const contentEl = document.getElementById('content-auto');
+  if(contentEl) contentEl.innerHTML += html2;
 }
 
 // ── Canonical domain check ───────────────────────────────────────────────────
@@ -2199,14 +2434,23 @@ function buildCtx(sec){
     }
     case'content':{
       const sm=S.raw.sitemap,rd=S.raw.readability;
+      const hl=S.raw.hreflang;
+      const hlStr=hl===undefined?'':hl.length===0?' No hreflang tags.':' Hreflang: '+hl.length+' tags, '+[...new Set(hl.map(function(t){return t.lang;}).filter(function(l){return l!=='x-default';}).map(function(l){return l.split('-')[0];}))].join(', ')+'.';
       return(sm?sm.locs.length+' pages in sitemap. Max URL depth: '+sm.maxDepth+'.'+(sm.daysSinceUpdate!==null?' Last updated: '+sm.daysSinceUpdate+' days ago.':''):'No sitemap.')
         +' '+(sm&&sm.subdomains&&sm.subdomains.length?'Subdomains: '+sm.subdomains.join(', ')+'.':'')
-        +' '+(rd?'Flesch Reading Ease: '+rd.fre+'/100. FK Grade: '+rd.fkgl+'. Gunning Fog: '+rd.fog+'. Avg '+rd.wps+' words/sentence.':'No readability data.');
+        +' '+(rd?'Flesch Reading Ease: '+rd.fre+'/100. FK Grade: '+rd.fkgl+'. Gunning Fog: '+rd.fog+'. Avg '+rd.wps+' words/sentence.':'No readability data.')
+        +hlStr;
     }
     case'a11y':{
       const sc=S.raw.psi_mobile&&S.raw.psi_mobile.lighthouseResult&&S.raw.psi_mobile.lighthouseResult.categories&&S.raw.psi_mobile.lighthouseResult.categories.accessibility;
+      const axeData=S.raw.axe;
+      const axeStr=axeData&&axeData.violations!==undefined
+        ?'axe-core: '+axeData.violations.length+' violation'+(axeData.violations.length!==1?'s':'')+
+          (axeData.violations.length>0?' ('+axeData.violations.filter(function(v){return v.impact==='critical'||v.impact==='serious';}).length+' critical/serious). Top issues: '+axeData.violations.slice(0,3).map(function(v){return v.help;}).join(', ')+'.':' — none found.')
+        :'axe-core not yet run.';
       return(sc?'Lighthouse accessibility: '+Math.round(sc.score*100)+'/100. ':'No Lighthouse a11y data. ')
-        +'Alt text coverage, heading structure, skip link, lang attribute, form labels — see auto-detected data above.';
+        +axeStr
+        +' Alt text coverage, heading structure, skip link, lang attribute, form labels — see auto-detected data above.';
     }
     case'integrations':{
       var tr2=S.raw.trackers||[];
@@ -2423,7 +2667,7 @@ function renderFromRaw(){
       p.innerHTML=`<span class="check-dot"></span>${c.label}`;
       g.appendChild(p);
       // Mark done if we have relevant data for this check
-      const hasDone=(c.id==='psi'&&(r.psi_desktop||r.psi_mobile))||(c.id==='obs'&&r.secHeaders)||(c.id==='smap'&&r.sitemap)||(c.id==='rob'&&r.robots!==undefined)||(c.id==='trk'&&r.trackers)||(c.id==='tech'&&r.tech)||(c.id==='dns'&&r.dns)||(c.id==='canon'&&r.canonical!==undefined);
+      const hasDone=(c.id==='psi'&&(r.psi_desktop||r.psi_mobile))||(c.id==='obs'&&r.secHeaders)||(c.id==='smap'&&r.sitemap)||(c.id==='rob'&&r.robots!==undefined)||(c.id==='trk'&&r.trackers)||(c.id==='tech'&&r.tech)||(c.id==='dns'&&r.dns)||(c.id==='canon'&&r.canonical!==undefined)||(c.id==='axe'&&r.axe!==undefined)||(c.id==='hreflang'&&r.hreflang!==undefined);
       pill(c.id, hasDone?'done':'');
     });
     // set progress bar full
@@ -2604,7 +2848,17 @@ function renderFromRaw(){
     ogHtml+=`<div class="data-card ${og.desc?'good':'bad'}"><div class="dc-label">og:description</div><div class="dc-value">${og.desc?'✓':'✗'}</div><div class="dc-sub">${og.desc?'present':'missing'}</div></div>`;
     ogHtml+=`<div class="data-card ${og.img?'good':'bad'}"><div class="dc-label">og:image</div><div class="dc-value">${og.img?'✓':'✗'}</div><div class="dc-sub">${og.img?'present':'missing'}</div></div>`;
     ogHtml+=`<div class="data-card ${og.twCard?'good':'mid'}"><div class="dc-label">Twitter card</div><div class="dc-value">${og.twCard?'✓':'✗'}</div><div class="dc-sub">${og.twCard?'present':'not set'}</div></div></div>`;
-    ogHtml+='<div class="field-label-sm" style="margin-bottom:0.4rem;">Structured data / Schema.org</div><div class="data-grid" style="margin-bottom:0.75rem;">';
+
+    // Social preview mockups (from saved raw data)
+    var rDomain=''; try{rDomain=new URL(S.url||'').hostname;}catch{}
+    var rTitle = og.title ? esc(og.title) : '<span style="color:var(--text-dim);font-style:italic;">no title</span>';
+    var rDesc  = og.descText ? esc(og.descText.slice(0,160)+(og.descText.length>160?'…':'')) : '<span style="color:var(--text-dim);font-style:italic;">no description</span>';
+    ogHtml += '<div class="field-label-sm" style="margin-bottom:0.5rem;">Search result preview</div>';
+    ogHtml += `<div class="social-preview google-preview"><div class="sp-site-row"><div class="sp-favicon"></div><div class="sp-site-info"><div class="sp-site-name">${esc(S.client||rDomain)}</div><div class="sp-breadcrumb">${esc(rDomain)}</div></div></div><div class="sp-title">${og.title?esc(og.title.slice(0,60)+(og.title.length>60?'…':'')):'<span style="color:var(--text-dim);font-style:italic;">no title</span>'}</div><div class="sp-desc">${rDesc}</div></div>`;
+    ogHtml += '<div class="field-label-sm" style="margin-bottom:0.5rem;margin-top:0.85rem;">Social share card preview</div>';
+    ogHtml += `<div class="social-preview share-preview"><div class="sp-img-placeholder${og.img?'':' sp-img-missing'}"><span style="font-size:0.65rem;color:var(--text-muted);">${og.img?'og:image present — image will appear here':'no og:image — card will show without image'}</span></div><div class="sp-card-body"><div class="sp-card-domain">${esc(rDomain.toUpperCase())}</div><div class="sp-card-title">${og.title?esc(og.title.slice(0,70)+(og.title.length>70?'…':'')):'<span style="color:var(--text-dim);font-style:italic;">no title</span>'}</div><div class="sp-card-desc">${rDesc}</div></div></div>`;
+
+    ogHtml+='<div class="field-label-sm" style="margin-bottom:0.4rem;margin-top:0.85rem;">Structured data / Schema.org</div><div class="data-grid" style="margin-bottom:0.75rem;">';
     ogHtml+=`<div class="data-card ${og.schema?'good':'mid'}"><div class="dc-label">JSON-LD schema</div><div class="dc-value">${og.schema?'✓':'✗'}</div><div class="dc-sub">${og.schema?'present':'not detected'}</div></div>`;
     if(og.schemaTypes&&og.schemaTypes.length)ogHtml+=`<div class="data-card good"><div class="dc-label">Schema types</div><div class="dc-value" style="font-size:0.72rem;">${esc(og.schemaTypes.slice(0,3).join(', '))}</div><div class="dc-sub">${og.schemaTypes.length} type${og.schemaTypes.length>1?'s':''}</div></div>`;
     ogHtml+='</div>';
@@ -2684,6 +2938,22 @@ function renderFromRaw(){
   // Screenshot thumb
   var thumb=document.getElementById('ov-thumb');
   if(thumb){var img=document.createElement('img');img.alt='';img.style.cssText='width:100%;height:100%;object-fit:cover;object-position:top;display:block;border-radius:3px;';thumb.style.position='relative';img.onload=function(){thumb.innerHTML='';thumb.appendChild(img);};img.src='https://image.thum.io/get/width/200/crop/130/'+S.url;}
+  // axe-core results restore
+  if(r.axe && r.axe.violations){
+    renderAxeResults(r.axe.violations, r.axe.incomplete||[]);
+  }
+  // Hreflang restore
+  if(r.hreflang !== undefined){
+    // Re-run the render logic from saved data — pass a minimal fake html
+    var fakeHtml = (r.hreflang||[]).map(function(t){
+      return '<link rel="alternate" hreflang="'+t.lang+'" href="'+t.href+'">';
+    }).join('\n');
+    // Temporarily patch S.raw.html so runHreflang can parse it
+    var prevHtml = S.raw.html;
+    S.raw.html = fakeHtml;
+    runHreflang();
+    S.raw.html = prevHtml;
+  }
 }
 function loadAudit(data){
   S.url=data.url||'';S.client=data.client||'';S.raw=data.raw||{};
@@ -2809,11 +3079,11 @@ return { init };
 
       <div class="modal-section-title" style="margin-top:0.85rem;">Live tools</div>
 
-      <p class="modal-text" style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🔍 Scout</strong> — Website audit tool. Eight automated checks: Lighthouse scores, security headers, sitemap analysis, tech stack, DNS, accessibility, GDPR compliance, and readability. <a href="https://elleiana.github.io/Scout/" target="_blank" rel="noopener" class="modal-link">→ Open Scout</a></p>
+      <p class="modal-text" style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🔍 Scout</strong> — Website audit tool. Eight automated checks: Lighthouse scores, security headers, sitemap analysis, tech stack, DNS, accessibility, GDPR compliance, and readability. <a href="https://libertymoose.github.io/Scout/" target="_blank" rel="noopener" class="modal-link">→ Open Scout</a></p>
 
-      <p class="modal-text" style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🌿 Canopy</strong> — Site structure mapper. Crawls a live website, maps every URL into an interactive tree diagram, and exports as PNG, SVG, CSV, or JSON. <a href="https://elleiana.github.io/Canopy/" target="_blank" rel="noopener" class="modal-link">→ Open Canopy</a></p>
+      <p class="modal-text" style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🌿 Canopy</strong> — Site structure mapper. Crawls a live website, maps every URL into an interactive tree diagram, and exports as PNG, SVG, CSV, or JSON. <a href="https://libertymoose.github.io/Canopy/" target="_blank" rel="noopener" class="modal-link">→ Open Canopy</a></p>
 
-      <p class="modal-text" style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🧭 Waypoint</strong> — Redirect mapping toolkit. Cross-references old and new URLs, catches loops and chains, exports in CSV, .htaccess, or Nginx format. <a href="https://elleiana.github.io/Waypoint/" target="_blank" rel="noopener" class="modal-link">→ Open Waypoint</a></p>
+      <p class="modal-text" style="margin-top:0.4rem;"><strong style="color:var(--text-title);">🧭 Waypoint</strong> — Redirect mapping toolkit. Cross-references old and new URLs, catches loops and chains, exports in CSV, .htaccess, or Nginx format. <a href="https://libertymoose.github.io/Waypoint/" target="_blank" rel="noopener" class="modal-link">→ Open Waypoint</a></p>
 
       <div class="modal-section-title" style="margin-top:0.85rem;">In development</div>
 
