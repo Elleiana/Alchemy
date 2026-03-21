@@ -2796,6 +2796,7 @@ document.addEventListener('keydown', e => {
    Canopy.init — called by Alchemy with the active project
 ═══════════════════════════════════════════ */
 function init(project) {
+  requestAnimationFrame(() => {
   activeProjectName = project.name || '';
 
   // Load crawl results from Alchemy project into Canopy's crawlState
@@ -2825,6 +2826,7 @@ function init(project) {
         'No crawl data yet — go to <strong>Alchemy › Crawl</strong> and run a crawl first.';
     }
   }
+  }); // defer until DOM is painted after Alchemy tool injection
 }
 
 /* ── Expose functions called from inline HTML onclick attributes ── */
