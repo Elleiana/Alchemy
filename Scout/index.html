@@ -514,9 +514,6 @@
     <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;">
       <span class="audit-url-flat" id="audit-url-pill">—</span>
       <span id="audit-timestamp" style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text-dim);"></span>
-      <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center;">
-        <button class="btn-session" id="btn-go-export">→ Export</button>
-      </div>
     </div>
 
     <!-- run bar -->
@@ -913,34 +910,36 @@ async function startAudit(url, clientName) {
   S.url=norm(url); S.client=clientName||''; S.raw={};
   SECS.forEach(s=>{const ta=document.getElementById('nar-'+s);if(ta)ta.value='';});
   ['ux','content','perf','a11y','security','integrations'].forEach(s=>{const f=document.getElementById('fl-'+s);if(f)f.innerHTML='';});
-  document.getElementById('audit-url-pill').textContent=S.url;
-  document.getElementById('perf-auto').innerHTML='<div class="skeleton" style="height:70px;border-radius:5px;"></div>';
-  document.getElementById('a11y-auto').innerHTML='<div class="skeleton" style="height:50px;border-radius:5px;"></div>';
+  const _pill=document.getElementById('audit-url-pill'); if(_pill)_pill.textContent=S.url;
+  const _perfAuto=document.getElementById('perf-auto'); if(_perfAuto)_perfAuto.innerHTML='<div class="skeleton" style="height:70px;border-radius:5px;"></div>';
+  const _a11yAuto=document.getElementById('a11y-auto'); if(_a11yAuto)_a11yAuto.innerHTML='<div class="skeleton" style="height:50px;border-radius:5px;"></div>';
   S.raw.axe = undefined;
   S.raw.hreflang = undefined;
-  document.getElementById('security-auto').innerHTML='<div class="skeleton" style="height:90px;border-radius:5px;"></div>';
-  document.getElementById('integrations-auto').innerHTML='';
-  document.getElementById('content-auto').innerHTML='';
-  document.getElementById('og-auto').innerHTML='';
-  document.getElementById('ux-auto').innerHTML='';
-  document.getElementById('overview-auto').innerHTML='';
-  document.getElementById('ov-bars').innerHTML='';
-  document.getElementById('ov-depth').innerHTML='';
+  const _secAuto=document.getElementById('security-auto'); if(_secAuto)_secAuto.innerHTML='<div class="skeleton" style="height:90px;border-radius:5px;"></div>';
+  const _intAuto=document.getElementById('integrations-auto'); if(_intAuto)_intAuto.innerHTML='';
+  const _conAuto=document.getElementById('content-auto'); if(_conAuto)_conAuto.innerHTML='';
+  const _ogAuto=document.getElementById('og-auto'); if(_ogAuto)_ogAuto.innerHTML='';
+  const _uxAuto=document.getElementById('ux-auto'); if(_uxAuto)_uxAuto.innerHTML='';
+  const _ovAuto=document.getElementById('overview-auto'); if(_ovAuto)_ovAuto.innerHTML='';
+  const _ovBars=document.getElementById('ov-bars'); if(_ovBars)_ovBars.innerHTML='';
+  const _ovDepth=document.getElementById('ov-depth'); if(_ovDepth)_ovDepth.innerHTML='';
   var uxLinks=document.getElementById('ux-links-auto');if(uxLinks)uxLinks.remove();
   dcSet('dc-pages','—'); dcSet('dc-images','—');
   dcSet('dc-sitemap','—'); dcSet('dc-robots','—');
   dcSet('dc-canonical','—'); dcSet('dc-domain','—');
-  document.getElementById('overview-site-name').textContent='—';
-  document.getElementById('overview-site-url').textContent=S.url;
-  document.getElementById('audit-timestamp').textContent='running…';
+  const _siteName=document.getElementById('overview-site-name'); if(_siteName)_siteName.textContent='—';
+  const _siteUrl=document.getElementById('overview-site-url'); if(_siteUrl)_siteUrl.textContent=S.url;
+  const _ts=document.getElementById('audit-timestamp'); if(_ts)_ts.textContent='running…';
   var thumb=document.getElementById('ov-thumb');
-  thumb.innerHTML='<div class="ov-thumb-bar"></div><div class="ov-thumb-line" style="width:80%"></div><div class="ov-thumb-line" style="width:55%"></div>';
-  var img=document.createElement('img');
-  img.alt=''; img.style.cssText='width:100%;height:100%;object-fit:cover;object-position:top;display:block;position:absolute;top:0;left:0;border-radius:3px;';
-  thumb.style.position='relative';
-  img.onload=function(){thumb.innerHTML='';thumb.appendChild(img);};
-  img.src='https://image.thum.io/get/width/200/crop/130/'+S.url;
-  document.getElementById('run-bar').style.display='';
+  if(thumb){
+    thumb.innerHTML='<div class="ov-thumb-bar"></div><div class="ov-thumb-line" style="width:80%"></div><div class="ov-thumb-line" style="width:55%"></div>';
+    var img=document.createElement('img');
+    img.alt=''; img.style.cssText='width:100%;height:100%;object-fit:cover;object-position:top;display:block;position:absolute;top:0;left:0;border-radius:3px;';
+    thumb.style.position='relative';
+    img.onload=function(){thumb.innerHTML='';thumb.appendChild(img);};
+    img.src='https://image.thum.io/get/width/200/crop/130/'+S.url;
+  }
+  const _runBar=document.getElementById('run-bar'); if(_runBar)_runBar.style.display='';
   switchPage('audit');
   await runChecks();
 }
@@ -993,7 +992,7 @@ const CHECKS=[
   {id:'hreflang', label:'Hreflang',          fn:runHreflang     },
 ];
 async function runChecks() {
-  const g=document.getElementById('checks-grid'); g.innerHTML='';
+  const g=document.getElementById('checks-grid'); if(!g)return; g.innerHTML='';
   CHECKS.forEach(c=>{const p=document.createElement('div');p.className='check-pill';p.id='cp-'+c.id;p.innerHTML=`<span class="check-dot"></span>${c.label}`;g.appendChild(p);});
   setProgress(0);
   for(let i=0;i<CHECKS.length;i++){
@@ -1007,10 +1006,12 @@ async function runChecks() {
   const doneCount = document.querySelectorAll('.check-pill.done').length;
   const errCount = errs.length;
   const sumEl=document.getElementById('run-summary');
-  if(errCount){
-    sumEl.innerHTML=`<span style="color:#008080">${doneCount} completed</span> · <span style="color:#c86a5a">${errCount} failed</span>`;
-  } else {
-    sumEl.innerHTML=`<span style="color:#008080">All ${doneCount} scans complete</span>`;
+  if(sumEl){
+    if(errCount){
+      sumEl.innerHTML=`<span style="color:#008080">${doneCount} completed</span> · <span style="color:#c86a5a">${errCount} failed</span>`;
+    } else {
+      sumEl.innerHTML=`<span style="color:#008080">All ${doneCount} scans complete</span>`;
+    }
   }
   // Auto-save completed audit to project so it can be restored next time Scout loads
   autoSaveAuditToProject();
@@ -1035,8 +1036,8 @@ function stopPsiSlowIndicator(){
 }
 function setProgress(done){
   const pct=Math.round(done/CHECKS.length*100);
-  document.getElementById('progress-bar-fill').style.width=pct+'%';
-  document.getElementById('run-pct').textContent=pct+'%';
+  const _pbf=document.getElementById('progress-bar-fill'); if(_pbf)_pbf.style.width=pct+'%';
+  const _rpct=document.getElementById('run-pct'); if(_rpct)_rpct.textContent=pct+'%';
   const tortoise=document.getElementById('run-tortoise');
   const label=document.getElementById('run-label');
   if(done>=CHECKS.length){
@@ -1045,7 +1046,7 @@ function setProgress(done){
     if(label){const spans=label.querySelectorAll('span');const t=spans[1];if(t)t.textContent=' Checks complete';}
     const now=new Date();
     const ts=now.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' at '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('audit-timestamp').textContent='audited '+ts;
+    const _ats=document.getElementById('audit-timestamp'); if(_ats)_ats.textContent='audited '+ts;
     S.raw._auditedAt=now.toISOString();
   }
 }
@@ -2671,14 +2672,14 @@ function renderFromRaw(){
       pill(c.id, hasDone?'done':'');
     });
     // set progress bar full
-    document.getElementById('progress-bar-fill').style.width='100%';
-    document.getElementById('run-pct').textContent='100%';
+    const _pbf2=document.getElementById('progress-bar-fill'); if(_pbf2)_pbf2.style.width='100%';
+    const _rpct2=document.getElementById('run-pct'); if(_rpct2)_rpct2.textContent='100%';
     const tortoise=document.getElementById('run-tortoise');
     if(tortoise){tortoise.textContent='✓';tortoise.style.animation='none';}
     const label=document.getElementById('run-label');
     if(label){const spans=label.querySelectorAll('span');const t=spans[1];if(t)t.textContent=' Loaded from saved session';}
   }
-  document.getElementById('run-bar').style.display='';
+  const _rb=document.getElementById('run-bar'); if(_rb)_rb.style.display='';
   // PSI
   if(r.psi_desktop||r.psi_mobile)renderPSI();
   // Security headers
@@ -2999,12 +3000,12 @@ function init(project) {
   // If this project already has a saved Scout audit, restore it — don't re-run
   const saved = project.toolData && project.toolData.scout;
   if (saved && saved.url && saved.raw && Object.keys(saved.raw).length > 0) {
-    setTimeout(() => loadAudit(saved), 0);
+    requestAnimationFrame(() => loadAudit(saved));
     return;
   }
   // No saved audit — run fresh
-  // setTimeout defers until DOM is fully settled after Alchemy's tool injection
-  setTimeout(() => startAudit(project.url, project.name), 0);
+  // requestAnimationFrame ensures DOM is painted and settled after Alchemy's tool injection
+  requestAnimationFrame(() => startAudit(project.url, project.name).catch(e => console.error('Scout startAudit error:', e)));
 }
 
 // ── Auto-save audit to project after completion ──
