@@ -510,15 +510,14 @@
       <div class="page-heading-sub">Automated checks run on load — add your observations and findings to each section.</div>
     </div>
 
-    <!-- status bar — URL + timestamp only, no session controls (owned by Alchemy) -->
-    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;">
-      <span class="audit-url-flat" id="audit-url-pill">—</span>
-      <span id="audit-timestamp" style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text-dim);"></span>
-    </div>
-
-    <!-- run bar -->
-    <div class="section-card" id="run-bar" style="margin-bottom:1rem;display:none;">
-      <div class="card-body" style="padding:0.75rem 1rem;">
+    <!-- session + run bar — always visible, matches original Scout layout -->
+    <div class="section-card" id="run-bar" style="margin-bottom:1rem;">
+      <div class="card-body" style="padding:0.65rem 1rem;">
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+          <span class="audit-url-pill" id="audit-url-pill">—</span>
+          <span id="audit-client-label" style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:var(--text-muted);"></span>
+          <span id="audit-timestamp" style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text-dim);margin-left:auto;"></span>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
           <span id="run-label" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--text-muted);display:flex;align-items:center;gap:0.4rem;"><span id="run-tortoise" class="tortoise-emoji">🐢</span><span> Running checks…</span><span id="run-slow-msg" style="color:var(--text-muted);"></span></span>
           <div style="display:flex;gap:0.75rem;align-items:center;">
@@ -911,6 +910,7 @@ async function startAudit(url, clientName) {
   SECS.forEach(s=>{const ta=document.getElementById('nar-'+s);if(ta)ta.value='';});
   ['ux','content','perf','a11y','security','integrations'].forEach(s=>{const f=document.getElementById('fl-'+s);if(f)f.innerHTML='';});
   const _pill=document.getElementById('audit-url-pill'); if(_pill)_pill.textContent=S.url;
+  const _clientLbl=document.getElementById('audit-client-label'); if(_clientLbl)_clientLbl.textContent=S.client||'';
   const _perfAuto=document.getElementById('perf-auto'); if(_perfAuto)_perfAuto.innerHTML='<div class="skeleton" style="height:70px;border-radius:5px;"></div>';
   const _a11yAuto=document.getElementById('a11y-auto'); if(_a11yAuto)_a11yAuto.innerHTML='<div class="skeleton" style="height:50px;border-radius:5px;"></div>';
   S.raw.axe = undefined;
@@ -939,7 +939,7 @@ async function startAudit(url, clientName) {
     img.onload=function(){thumb.innerHTML='';thumb.appendChild(img);};
     img.src='https://image.thum.io/get/width/200/crop/130/'+S.url;
   }
-  const _runBar=document.getElementById('run-bar'); if(_runBar)_runBar.style.display='';
+  const _runBar=document.getElementById('run-bar'); // always visible — no display change needed
   switchPage('audit');
   await runChecks();
 }
@@ -3000,12 +3000,11 @@ function init(project) {
   // If this project already has a saved Scout audit, restore it — don't re-run
   const saved = project.toolData && project.toolData.scout;
   if (saved && saved.url && saved.raw && Object.keys(saved.raw).length > 0) {
-    requestAnimationFrame(() => loadAudit(saved));
+    loadAudit(saved);
     return;
   }
   // No saved audit — run fresh
-  // requestAnimationFrame ensures DOM is painted and settled after Alchemy's tool injection
-  requestAnimationFrame(() => startAudit(project.url, project.name).catch(e => console.error('Scout startAudit error:', e)));
+  startAudit(project.url, project.name).catch(e => console.error('Scout startAudit error:', e));
 }
 
 // ── Auto-save audit to project after completion ──
